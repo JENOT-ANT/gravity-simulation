@@ -2,7 +2,13 @@
 This is crude code where the whole project begins.
 It's not very good piece of code, it's just a root of this project,
 which, I hope, will be a little more cleaner.
+
+INSTRUCTION:
+    esc     > quite
+    arrows  > camera movement
+    +/-     > zoom in/out
 '''
+
 import pygame
 import math
 
