@@ -12,4 +12,4 @@ This project uses "pygame" to render simulation, so it's necessary to have pygam
 - pygame module
 
 ## Contribution:
-Develpoers who wants to contribute in this project are welcome. You can send a message using **Discussion** tab.
+Developers who want to contribute in this project are welcome. You can send a message using **Discussion** tab.
