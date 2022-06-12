@@ -6,7 +6,7 @@ This project is not complited yet, so if you want to contribute to it you are we
 ## Contents:
 - ["gravity.py"](/gravity.py)  > library
 - ["vector.py"](/vector.py)   > library
-- [example **Solar System** simulation](/temporary-v_alfa-solar-system-simulation.py)
+- [example **Solar System** simulation](/temporary-solar-system-simulation.py)
 
 ## Info:
 This project uses "pygame" to render simulation, so it's necessary to have pygame module installed to run it properly.
