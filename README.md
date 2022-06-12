@@ -1,5 +1,7 @@
 # gravity-simulation
-This project's purpose is to simulate gravitational interactions between various objects (example: Solar System) in 2D environment. 
+This project's purpose is to simulate gravitational interactions between various objects (example: Solar System) in 2D environment.
+
+This project is not complited yet, so if you want to contribute to it you are welcome. You can apply for *contributor* entitlements using [**Discussion**](https://github.com/JENOT-ANT/gravity-simulation/discussions) tab.
 
 ## Contents:
 - ["gravity.py"](/gravity.py)  > library
