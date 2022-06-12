@@ -2,7 +2,7 @@
 This project's purpose is to simulate gravitational interactions between various objects (example: Solar System) in 2D environment. 
 
 ## Contents:
-- ["gravity.py"](/gravity.py)  > library (not complited)
+- ["gravity.py"](/gravity.py)  > library
 - ["vector.py"](/vector.py)   > library
 - [example **Solar System** simulation](/temporary-v_alfa-solar-system-simulation.py)
 
