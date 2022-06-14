@@ -7,6 +7,7 @@ INSTRUCTION:
     esc     > quite
     arrows  > camera movement
     +/-     > zoom in/out
+    r       > leave/delete a trace
 '''
 
 import pygame
@@ -16,6 +17,8 @@ pygame.init()
 
 RESOLUTION = (1000, 700)
 G = 6.67430 * pow(10, -17)
+ANIMATION_SPEED = 100
+FRAME_RATE = 25
 
 display = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
@@ -182,7 +185,7 @@ def main():
     space_craft.set_velocity(Vector(0, 30.290))
 
     while True:
-        clock.tick(25)
+        clock.tick(FRAME_RATE)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -239,7 +242,7 @@ def main():
         elif keyboard[pygame.K_LEFT]:
             translation[0] += speed / scale
 
-        for i in range(0, 1):
+        for i in range(0, ANIMATION_SPEED):
 
             sun.update((mercury, wenus, earth, mars,
                        jupiter, saturn), Vector(0, 0))
