@@ -22,6 +22,8 @@ This project uses "pygame" to render simulation, so it's necessary to have pygam
 
 ![image](https://user-images.githubusercontent.com/107063507/173674309-7de2bad7-eb6f-4e3f-bb5a-2d221c18f854.png)
 
+![image](https://user-images.githubusercontent.com/107063507/173684862-2e1e01f3-ef41-4c11-914b-d6b4a5ac2001.png)
+
 ![image](https://user-images.githubusercontent.com/107063507/173676892-da669a39-5ce7-4b75-aded-fa648f602e15.png)
 
 ![image](https://user-images.githubusercontent.com/107063507/173678917-6f729824-f2b1-4aca-aa30-26fa54b362d3.png)
