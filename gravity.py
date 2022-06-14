@@ -27,7 +27,7 @@ class Object(object):
         gravity: v.Vector = v.Vector(0, 0)
 
         distance: v.Vector = v.subtract(influancing_object.position, self.position)
-        value: float = (G * influancing_object.mass * self.mass) / pow(distance.get_value(), 2)
+        value: float = (G * influancing_object.mass * self.mass) / pow(distance.get_value(), 2) # (G * M * m) / r^2
 
         if distance.x != 0:
             angle = math.atan(distance.y / distance.x)
@@ -54,7 +54,7 @@ class Object(object):
     def calculate_acceleration(self):
         acceleration: v.Vector = v.Vector(
             self.force.x / self.mass, self.force.y / self.mass
-        )
+        ) # a = F / m
 
         return acceleration
 
@@ -66,8 +66,9 @@ class Object(object):
     def calculate_collsion(self, velocity: v.Vector, influacing_objects: tuple ):
         for influanceing_object in influacing_objects:
             distance: v.Vector = v.subtract(influanceing_object.position, self.position)
+            
             if distance.get_value() =< (self.radius + influanceing_object.radius) :
-                velocity.x = (velocity.x * (self.mass -influanceing_object.mass ) + (2 * influanceing_object.mass * influanceing_object.velocity.x)) / (self.mass + influanceing_object.mass)
+                velocity.x = (velocity.x * (self.mass - influanceing_object.mass) + (2 * influanceing_object.mass * influanceing_object.velocity.x)) / (self.mass + influanceing_object.mass)
                 velocity.y = (velocity.y * (self.mass - influanceing_object.mass) + (2 * influanceing_object.mass * influanceing_object.velocity.y)) / (self.mass + influanceing_object.mass)
 
             return velocity
