@@ -18,7 +18,7 @@ pygame.init()
 RESOLUTION = (1000, 700)
 G = 6.67430 * pow(10, -3)
 ANIMATION_SPEED = 200
-FRAME_RATE = 30
+FRAME_RATE = 25
 
 display = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
@@ -144,11 +144,11 @@ class Object(object):
                            * scale, self.position[1] * scale + translation[1] * scale), self.radius * scale)
 
 
-star = Object(10000, (0, 0), 1000, (110, 150, 255))
+star = Object(20000, (0, 0), 1000, (110, 150, 255))
 planet1 = Object(100, (3100, 0), 200, (100, 200, 50))
-planet2 = Object(100, (-6500, 0), 300, (200, 100, 50))
+planet2 = Object(300, (-6500, 0), 300, (200, 100, 50))
 planet3 = Object(100, (9000, 0), 220, (200, 150, 100))
-# moon = Object(10, (-7000, 0), 100, (120, 120, 120))
+planet4 = Object(80, (-8000, 0), 190, (120, 120, 120))
 
 def main():
     drawing = False
@@ -158,10 +158,10 @@ def main():
     translation = [12000, 9000]
     speed = 5
     
-    planet1.set_velocity(Vector(0, 0.15))
-    planet2.set_velocity(Vector(0, 0.1))
-    planet3.set_velocity(Vector(0, 0.06))
-    # moon.set_velocity(Vector(0 , 0.14))
+    planet1.set_velocity(Vector(0, 0.18))
+    planet2.set_velocity(Vector(0, 0.15))
+    planet3.set_velocity(Vector(0, 0.13))
+    planet4.set_velocity(Vector(0, 0.06))
 
     while True:
         clock.tick(FRAME_RATE)
@@ -200,11 +200,11 @@ def main():
             translation[0] += speed / scale
 
         for _ in range(0, ANIMATION_SPEED):
-            star.update(tuple(), Vector(0, 0))
-            planet1.update((star, planet2, planet3), Vector(0, 0))
-            planet2.update((star, planet1, planet3), Vector(0, 0))
-            # moon.update((star, planet1, planet2), Vector(0, 0))
-            planet3.update((star, planet1, planet2), Vector(0, 0))
+            star.update(tuple())#(planet1, planet2, planet3, planet4))
+            planet1.update((star, planet2, planet3, planet4))
+            planet2.update((star, planet1, planet3, planet4))
+            planet3.update((star, planet1, planet2, planet4))
+            planet4.update((star, planet1, planet2, planet3))
 
         if drawing == False:
             display.fill((0, 0, 0))
@@ -213,7 +213,7 @@ def main():
         planet1.render(scale, translation)
         planet2.render(scale, translation)
         planet3.render(scale, translation)
-        # moon.render(scale, translation)
+        planet4.render(scale, translation)
 
         pygame.display.flip()
 
