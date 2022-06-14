@@ -12,7 +12,7 @@ This project is not complited yet, so if you want to contribute to it you are we
 This project uses "pygame" to render simulation, so it's necessary to have pygame module installed to run it properly.
 
 ## Galery:
-
+### Solar System:
 ![image](https://user-images.githubusercontent.com/107063507/173241143-0732d416-03d7-4a00-b413-d7a58ff59db1.png)
 
 ![image](https://user-images.githubusercontent.com/107063507/173243419-0e2e234d-9133-46be-afdb-58d9f96d5921.png)
@@ -24,6 +24,11 @@ This project uses "pygame" to render simulation, so it's necessary to have pygam
 ![image](https://user-images.githubusercontent.com/107063507/173242789-2a12a07d-50bf-4bca-8280-02f6c29aeb12.png)
 
 ![image](https://user-images.githubusercontent.com/107063507/173243674-712b3772-a16e-447f-951c-c3e80c13e9ff.png)
+### Example simulation:
+![image](https://user-images.githubusercontent.com/107063507/173674309-7de2bad7-eb6f-4e3f-bb5a-2d221c18f854.png)
+![image](https://user-images.githubusercontent.com/107063507/173676892-da669a39-5ce7-4b75-aded-fa648f602e15.png)
+![image](https://user-images.githubusercontent.com/107063507/173677003-b7fbab52-4f10-4f12-a162-8100cb24e8a1.png)
+![image](https://user-images.githubusercontent.com/107063507/173678917-6f729824-f2b1-4aca-aa30-26fa54b362d3.png)
 
 
 ## Requirements:
