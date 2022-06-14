@@ -160,8 +160,8 @@ def main():
     
     planet1.set_velocity(Vector(0, 0.18))
     planet2.set_velocity(Vector(0, 0.15))
-    planet3.set_velocity(Vector(0, 0.13))
-    planet4.set_velocity(Vector(0, 0.06))
+    planet3.set_velocity(Vector(0, 0.122))
+    planet4.set_velocity(Vector(0, 0.07))
 
     while True:
         clock.tick(FRAME_RATE)
@@ -201,10 +201,10 @@ def main():
 
         for _ in range(0, ANIMATION_SPEED):
             star.update(tuple())#(planet1, planet2, planet3, planet4))
-            planet1.update((star, planet2, planet3, planet4))
-            planet2.update((star, planet1, planet3, planet4))
-            planet3.update((star, planet1, planet2, planet4))
-            planet4.update((star, planet1, planet2, planet3))
+            planet1.update((star,))
+            planet2.update((star,))
+            planet3.update((star,))
+            planet4.update((star,))
 
         if drawing == False:
             display.fill((0, 0, 0))
