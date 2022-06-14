@@ -62,6 +62,15 @@ class Object(object):
         velocity = v.add(velocity, self.acceleration)
 
         return velocity
+    
+        def calculate_collsion(self, velocity: v.Vector, influacing_objects: tuple ):
+            for influanceing_object in influacing_objects:
+                distance: v.Vector = v.subtract(influanceing_object.position, self.position)
+                if distance.get_value() =< (self.radius + influanceing_object.radius) :
+                    velocity.x= (velocity.x*(self.mass -influanceing_object.mass ) +(2*influanceing_object.mass*influanceing_object.velocity.x))/(self.mass + influanceing_object.mass)
+                    velocity.y = (velocity.y * (self.mass - influanceing_object.mass) + (2 * influanceing_object.mass * influanceing_object.velocity.y))/(self.mass + influanceing_object.mass)
+
+            return velocity
 
     def update_position(self, position: v.Vector):
         position = v.add(position, self.velocity)
@@ -69,6 +78,7 @@ class Object(object):
         return position
 
     def update(self, influencing_objects: tuple):
+        self.velocity = self.calculate_collsion(self.velocity,influencing_objects)
         self.force = self.calculate_gravity(influencing_objects)
         self.acceleration = self.calculate_acceleration()
         self.velocity = self.update_velocity(self.velocity)
