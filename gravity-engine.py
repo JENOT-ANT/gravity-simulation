@@ -7,6 +7,12 @@ OFF = 0
 ON = 1
 PAUSE = 2
 
+BLACK = (40, 40, 40)
+L_RED = (255, 100, 100)
+L_GREEN = (100, 255, 100)
+L_BLUE = (100, 100, 255)
+WHITE = (240, 240, 240)
+
 
 class Color(object):
     red: int = None
@@ -27,8 +33,10 @@ class Window(object):
     display: pygame.Surface = None
     frame_color: tuple = None
 
-    def __init__(self, window_resolution: tuple):
+    def __init__(self, window_resolution: tuple, frame_color: tuple):
+        self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
+        self.frame_color = frame_color
 
     def update(self):
         self.display.blits()
@@ -37,6 +45,7 @@ class Window(object):
 
 class Scene(object):
     objects: list = None
+    connections: list = None  # 2D list: for each object there is a separate list with True on indexes, where object is influenced by object of this index.
 
     def __init__(self):
         pass
@@ -49,11 +58,19 @@ class Scene(object):
 
 
 class Cam(object):
+
     translation: Vector = None
     scale: int = None
 
     def __init__(self, translation, scale):
-        pass
+        self.translation = translation
+        self.scale = scale
+
+    def transform(self, transformation: Vector):
+        self.translation = add_vectors(self.translate, transformation)
+
+    def set_scale(self, new_scale: int):
+        self.scale = new_scale
 
 
 class Simulation(object):
@@ -63,8 +80,16 @@ class Simulation(object):
     scene: Scene = None
     state: int = None
 
-    def __init__(self):
-        self.window = Window()
+    def __init__(
+        self,
+        window_resolution: tuple,
+        frame_color: tuple,
+        cam_translation: Vector,
+        scale: int,
+    ):
+        self.window = Window(window_resolution, frame_color)
+        self.cam = Cam(cam_translation, scale)
+        self.scene = Scene()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -72,9 +97,10 @@ class Simulation(object):
                 pygame.quite()
 
     def main_loop(self):
-        while self.state != 0:
+        self.state = ON
+        while self.state != OFF:
             pygame.clock.tick(self.frame_rate)
-            
+
             self.handle_events()
 
             self.window.update()
