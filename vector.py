@@ -24,9 +24,9 @@ class Vector(object):
         return math.sqrt(pow(self.x, 2) + pow(self.y, 2))  # _/x^2 + y^2`
 
 
-def add(v1: Vector, v2: Vector):
+def add_vectors(v1: Vector, v2: Vector):
     return Vector(v1.x + v2.x, v1.y + v2.y)
 
 
-def subtract(v1: Vector, v2: Vector):
+def subtract_vectors(v1: Vector, v2: Vector):
     return Vector(v1.x - v2.x, v1.y - v2.y)

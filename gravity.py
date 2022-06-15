@@ -1,5 +1,5 @@
 import math
-import vector as v
+from vector import *
 
 G = 6.6743015 * pow(10, -17)  # for [km]
 
@@ -8,15 +8,15 @@ class Object(object):
     """material object class"""
 
     mass: float = None # [kg]
-    position: v.Vector = None # [km]
-    force: v.Vector = None # [N]
-    acceleration: v.Vector = None # [km / t^2]
-    velocity: v.Vector = None # [km / t]
+    position: Vector = None # [km]
+    force: Vector = None # [N]
+    acceleration: Vector = None # [km / t^2]
+    velocity: Vector = None # [km / t]
 
     radius: float = None # [km]
 
     def __init__(
-        self, object_mass: float, object_position: v.Vector, object_radius: float
+        self, object_mass: float, object_position: Vector, object_radius: float
     ):
         self.mass = object_mass
         self.position = object_position
@@ -24,9 +24,9 @@ class Object(object):
 
     def _one_object_gravity_(self, influancing_object):
         angle: float = None
-        gravity: v.Vector = v.Vector(0, 0)
+        gravity: Vector = Vector(0, 0)
 
-        distance: v.Vector = v.subtract(influancing_object.position, self.position)
+        distance: Vector = subtract_vectors(influancing_object.position, self.position)
         value: float = (G * influancing_object.mass * self.mass) / pow(distance.get_value(), 2) # (G * M * m) / r^2
 
         if distance.x != 0:
@@ -44,28 +44,28 @@ class Object(object):
         return gravity
 
     def calculate_gravity(self, influacing_objects: tuple):
-        gravity: v.Vector = v.Vector(0, 0)
+        gravity: Vector = Vector(0, 0)
 
         for influanceing_object in influacing_objects:
-            gravity = v.add(gravity, self._one_object_gravity_(influanceing_object))
+            gravity = add_vectors(gravity, self._one_object_gravity_(influanceing_object))
 
         return gravity
 
     def calculate_acceleration(self):
-        acceleration: v.Vector = v.Vector(
+        acceleration: Vector = Vector(
             self.force.x / self.mass, self.force.y / self.mass
         ) # a = F / m
 
         return acceleration
 
-    def update_velocity(self, velocity: v.Vector):
-        velocity = v.add(velocity, self.acceleration)
+    def update_velocity(self, velocity: Vector):
+        velocity = add_vectors(velocity, self.acceleration)
 
         return velocity
     
-    def calculate_collsion(self, velocity: v.Vector, influacing_objects: tuple ):
+    def calculate_collsion(self, velocity: Vector, influacing_objects: tuple ):
         for influanceing_object in influacing_objects:
-            distance: v.Vector = v.subtract(influanceing_object.position, self.position)
+            distance: Vector = subtract_vectors(influanceing_object.position, self.position)
             
             if distance.get_value() <= (self.radius + influanceing_object.radius) :
                 velocity.x = (velocity.x * (self.mass - influanceing_object.mass) + (2 * influanceing_object.mass * influanceing_object.velocity.x)) / (self.mass + influanceing_object.mass)
@@ -73,8 +73,8 @@ class Object(object):
 
             return velocity
 
-    def update_position(self, position: v.Vector):
-        position = v.add(position, self.velocity)
+    def update_position(self, position: Vector):
+        position = add_vectors(position, self.velocity)
 
         return position
 

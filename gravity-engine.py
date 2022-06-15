@@ -1,6 +1,6 @@
 import gravity
 import pygame
-import vector
+from vector import *
 
 pygame.init()
 OFF = 0
@@ -49,7 +49,7 @@ class Scene(object):
 
 
 class Cam(object):
-    translation: vector.Vector = None
+    translation: Vector = None
     scale: int = None
 
     def __init__(self, translation, scale):
