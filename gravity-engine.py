@@ -39,7 +39,7 @@ class Window(object):
         self.frame_color = frame_color
 
     def update(self):
-        self.display.blits()
+        pygame.display.flip()
         self.display.fill((0, 0, 0))
 
 
@@ -47,15 +47,36 @@ class Scene(object):
     objects: list = None
     connections: list = None  # 2D list: for each object there is a separate list with True on indexes, where object is influenced by object of this index.
 
-    def __init__(self):
-        pass
+    def __init__(self, objects: tuple=tuple(), objects_connections: list=list()):
+        self.objects = objects
+        self.connections = objects_connections
 
-    def add_object(self):
-        pass
+    def __generate_inluancing_objects__(self, connections_index):
+        object_index: int = 0
+        influancing_objects: list = []
 
+        for connection in self.connections[connections_index]:
+            if connection == True:
+                influancing_objects.append(self.objects[object_index])
+
+            object_index += 1
+
+        return influancing_objects
+
+    def add_object(self, material_object: gravity.Object, object_connections: list, is_influancer: bool=True):
+        
+        for i in range(len(self.connections)):
+            self.connections[i].append(is_influancer)
+
+        self.objects.append(material_object)
+        self.connections.append(object_connections)
+    
     def update(self):
-        pass
+        object_index: int = 0
 
+        for material_object in self.objects:
+            material_object.update(self.__generate_inluancing_objects__(object_index))
+            object_index += 1
 
 class Cam(object):
 
@@ -98,9 +119,11 @@ class Simulation(object):
 
     def main_loop(self):
         self.state = ON
+        
         while self.state != OFF:
             pygame.clock.tick(self.frame_rate)
 
             self.handle_events()
 
+            self.scene.update()
             self.window.update()
