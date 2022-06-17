@@ -3,6 +3,9 @@ import pygame
 from vector import *
 
 pygame.init()
+
+EVENTS = {"QUITE": 0}
+
 OFF = 0
 ON = 1
 PAUSE = 2
@@ -37,6 +40,27 @@ class Window(object):
         self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
         self.frame_color = frame_color
+
+    def get_events(self):
+        events: list = []
+        event: int = None
+
+        for pygame_event in pygame.event.get():
+            
+            if pygame_event.type == pygame.QUIT:
+                event = EVENTS["QUITE"]
+
+            elif pygame_event.type == pygame.KEYDOWN:
+                
+                if pygame_event.key == pygame.K_ESCAPE:
+                    event = EVENTS["QUITE"]
+
+            else:
+                continue
+
+            events.append(event)
+        
+        return events
 
     def update(self):
         pygame.display.flip()
@@ -113,9 +137,12 @@ class Simulation(object):
         self.scene = Scene()
 
     def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in self.window.get_events():
+            if event == EVENTS["QUITE"]:
                 pygame.quite()
+
+    def handle_keys(self):
+        pass
 
     def main_loop(self):
         self.state = ON
