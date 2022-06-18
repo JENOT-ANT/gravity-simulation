@@ -5,6 +5,11 @@ from vector import *
 
 pygame.init()
 
+FRAME_RATE = 25
+RESOLUTION = (500, 500)
+
+APP_NAME = "Gravity-Engine"
+
 EVENTS = {"QUITE": 0}
 STATES = {"OFF": 0, "ON": 1, "PAUSE": 2}
 
@@ -36,9 +41,10 @@ class Window(object):
     display: pygame.Surface = None
     frame_color: tuple = None
 
-    def __init__(self, window_resolution: tuple, frame_color: tuple=COLORS["BLACK"]):
+    def __init__(self, window_resolution: tuple, window_name: str, frame_color: tuple=COLORS["BLACK"]):
         self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
+        pygame.display.set_caption(window_name)
         self.frame_color = frame_color
 
     def get_events(self):
@@ -130,22 +136,29 @@ class Simulation(object):
     cam: Cam = None
     scene: Scene = None
     state: int = None
+    clock: pygame.time.Clock = None
+    frame_rate: int = None
 
     def __init__(
         self,
         window_resolution: tuple,
+        frame_rate: int,
         frame_color: tuple,
         cam_translation: Vector,
-        scale: int,
+        scale: int
     ):
-        self.window = Window(window_resolution, frame_color)
+        self.window = Window(window_resolution, APP_NAME, frame_color)
+        self.frame_rate = frame_rate
         self.cam = Cam(cam_translation, scale)
         self.scene = Scene()
+        self.clock = pygame.time.Clock()
 
     def handle_events(self):
         for event in self.window.get_events():
             if event == EVENTS["QUITE"]:
-                pygame.quite()
+                pygame.quit()
+                self.state = STATES["OFF"]
+
 
     def handle_keys(self):
         pass
@@ -154,9 +167,14 @@ class Simulation(object):
         self.state = STATES["ON"]
 
         while self.state != STATES["OFF"]:
-            pygame.clock.tick(self.frame_rate)
+            self.clock.tick(self.frame_rate)
 
-            self.handle_events()
+            # code hire
 
             self.scene.update()
             self.window.update()
+
+            self.handle_events()
+
+app = Simulation(RESOLUTION, FRAME_RATE, COLORS["BLACK"], (0, 0), 1)
+app.main_loop()
