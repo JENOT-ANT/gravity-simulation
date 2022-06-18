@@ -24,20 +24,6 @@ COLORS = {
 }
 
 
-# class Color(object):
-#     red: int = None
-#     green: int = None
-#     blue: int = None
-
-#     def __init__(self, red, green, blue):
-#         self.red = red
-#         self.green = green
-#         self.blue = blue
-
-#     def __call__(self):
-#         return (self.red, self.green, self.blue)
-
-
 class Window(object):
     resolution = None
     display: pygame.Surface = None
@@ -49,7 +35,7 @@ class Window(object):
         pygame.display.set_caption(window_name)
         self.frame_color = frame_color
 
-    def get_events(self):
+    def get_events(self, gui_page: gui.Page):
         events: list = []
         event: int = None
 
@@ -76,16 +62,38 @@ class Window(object):
         gui_page.render(self.display)#render current gui page
         
         pygame.display.flip()#flip buffer
-        
+
+
+class Cam(object):
+    size: tuple = None
+    translation: Vector = None
+    scale: int = None
+
+    def __init__(self, size: tuple, translation: Vector, scale: int):
+        self.size = size
+        self.translation = translation
+        self.scale = scale
+
+    def transform(self, transformation: Vector):
+        self.translation = add_vectors(self.translate, transformation)
+
+    def set_scale(self, new_scale: int):
+        self.scale = new_scale
 
 
 class Scene(object):
+    
     objects: list = None
     connections: list = None  # 2D list: for each object there is a separate list with True on indexes, where object is influenced by object of this index.
+    cam: Cam = None
 
-    def __init__(self, objects: tuple = tuple(), objects_connections: list = list()):
+    def __init__(self, cam_size: tuple, cam_translation: Vector, cam_scale: int, objects: tuple = tuple(), objects_connections: list = list()):
         self.objects = objects
         self.connections = objects_connections
+        self.cam = Cam(cam_size, cam_translation, cam_scale)
+
+    def __render_object__(self, object: gravity.Object, surface: pygame.Surface):
+        pass
 
     def __generate_inluancing_objects__(self, connections_index):
         object_index: int = 0
@@ -118,32 +126,23 @@ class Scene(object):
         for material_object in self.objects:
             material_object.update(self.__generate_inluancing_objects__(object_index))
             object_index += 1
+    
+    def render(self, frame: gui.Frame):
+        for material_object in self.objects:
+            pass
 
-
-class Cam(object):
-
-    translation: Vector = None
-    scale: int = None
-
-    def __init__(self, translation, scale):
-        self.translation = translation
-        self.scale = scale
-
-    def transform(self, transformation: Vector):
-        self.translation = add_vectors(self.translate, transformation)
-
-    def set_scale(self, new_scale: int):
-        self.scale = new_scale
 
 
 class Simulation(object):
 
     window: Window = None
-    cam: Cam = None
+    #cam: Cam = None
     scene: Scene = None
     state: int = None
     clock: pygame.time.Clock = None
     frame_rate: int = None
+
+    menu_interface: gui.Page = None
 
     def __init__(
         self,
@@ -155,12 +154,12 @@ class Simulation(object):
     ):
         self.window = Window(window_resolution, APP_NAME, frame_color)
         self.frame_rate = frame_rate
-        self.cam = Cam(cam_translation, scale)
+        #self.scene.cam = Cam(cam_translation, scale)
         self.scene = Scene()
         self.clock = pygame.time.Clock()
 
-    def handle_events(self):
-        for event in self.window.get_events():
+    def handle_events(self, gui_page: gui.Page):
+        for event in self.window.get_events(gui_page):
             if event == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
@@ -174,12 +173,16 @@ class Simulation(object):
     def handle_keys(self):
         pass
 
-    def main_loop(self):
+    def create_menu_interface(self):
+        self.menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
+        self.menu_interface.add_frame("main" ,(100, 100), (200, 200), COLORS["L_BLUE"])
+
+        self.menu_interface.frames["main"].add_textbox("Hello, World!", (10, 10), COLORS["L_GREEN"], None)
         
+    
+    def main_loop(self):
+        self.create_menu_interface()
         main_interface = gui.Page(FONT_PATH, FONT_SIZE)
-        menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
-        menu_interface.add_frame((100, 100), (200, 200), COLORS["L_BLUE"])
-        menu_interface.frames[0].add_textbox("Hello, World!", (20, 20), COLORS["L_GREEN"], None)
 
         self.state = STATES["ON"]
 
@@ -190,10 +193,11 @@ class Simulation(object):
             if self.state != STATES["PAUSE"]:
                 self.scene.update()
                 self.window.render(main_interface)
+                self.handle_events(main_interface)
             else:
-                self.window.render(menu_interface)
+                self.window.render(self.menu_interface)
+                self.handle_events(self.menu_interface)
             
-            self.handle_events()
 
 
 app = Simulation(RESOLUTION, FRAME_RATE, COLORS["BLACK"], (0, 0), 1)
