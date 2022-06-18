@@ -30,13 +30,8 @@ class Textbox(object):
         self.rectangle.x = position[0]
         self.rectangle.y = position[1]
 
-    def render(self, display: pygame.Surface, global_position: tuple):
-        global_rectangle = self.rectangle
-
-        global_rectangle.x += global_position[0]
-        global_rectangle.y += global_position[1]
-        
-        display.blit(self.rendered, global_rectangle)
+    def render(self, display: pygame.Surface):
+        display.blit(self.rendered, self.rectangle)
 
 
 class Button(object):
@@ -49,11 +44,25 @@ class Inputbox(object):
 
 class Frame(object):
 
-    position: tuple = None
+    surface: pygame.Surface = None
+    rectangle: pygame.Rect = None
+
+    #position: tuple = None
+    color: tuple = None
     gui_objects: list = None
     font: pygame.font.Font = None
-
-    def __init__(self, font: pygame.font.Font):
+    
+    def __init__(
+        self,
+        position: tuple,
+        size: tuple,
+        background_color: tuple,
+        font: pygame.font.Font,
+    ):
+        self.gui_objects = []
+        self.surface = pygame.Surface(size)
+        self.rectangle = pygame.Rect(position[0], position[1], size[0], size[1])
+        self.color = background_color
         self.font = font
 
     def add_textbox(
@@ -68,19 +77,23 @@ class Frame(object):
         )
 
     def render(self, display: pygame.Surface):
+        self.surface.fill(self.color)
+        
         for gui_object in self.gui_objects:
-            gui_object.render(display, self.position)
-
+            gui_object.render(self.surface)
+        
+        display.blit(self.surface, self.rectangle)
 
 class Page(object):
     font: pygame.font.Font = None
     frames: list = None
 
     def __init__(self, font_path: str, font_size: int):
+        self.frames = []
         self.font = pygame.font.Font(font_path, font_size)
 
-    def add_frame(self):
-        self.frames.append(Frame(self.font))
+    def add_frame(self, position: tuple, size: tuple, background_color: tuple):
+        self.frames.append(Frame(position, size, background_color, self.font))
 
     def render(self, display: pygame.Surface):
         for frame in self.frames:

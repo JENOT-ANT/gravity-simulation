@@ -6,9 +6,9 @@ from vector import *
 pygame.init()
 
 FRAME_RATE = 25
-RESOLUTION = (500, 500)
+RESOLUTION = (600, 600)
 FONT_PATH: str = None
-FONT_SIZE: int = 20
+FONT_SIZE: int = 30
 
 APP_NAME = "Gravity-Engine"
 
@@ -70,9 +70,13 @@ class Window(object):
 
         return events
 
-    def update(self):
-        pygame.display.flip()
-        self.display.fill(self.frame_color)
+    def render(self, gui_page: gui.Page):
+        
+        self.display.fill(self.frame_color)#clear screen
+        gui_page.render(self.display)#render current gui page
+        
+        pygame.display.flip()#flip buffer
+        
 
 
 class Scene(object):
@@ -171,6 +175,12 @@ class Simulation(object):
         pass
 
     def main_loop(self):
+        
+        main_interface = gui.Page(FONT_PATH, FONT_SIZE)
+        menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
+        menu_interface.add_frame((100, 100), (200, 200), COLORS["L_BLUE"])
+        menu_interface.frames[0].add_textbox("Hello, World!", (20, 20), COLORS["L_GREEN"], None)
+
         self.state = STATES["ON"]
 
         while self.state != STATES["OFF"]:
@@ -179,8 +189,10 @@ class Simulation(object):
             
             if self.state != STATES["PAUSE"]:
                 self.scene.update()
+                self.window.render(main_interface)
+            else:
+                self.window.render(menu_interface)
             
-            self.window.update()
             self.handle_events()
 
 
