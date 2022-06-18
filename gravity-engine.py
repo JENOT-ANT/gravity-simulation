@@ -1,20 +1,20 @@
 import gravity
 import pygame
+import gui
 from vector import *
 
 pygame.init()
 
 EVENTS = {"QUITE": 0}
+STATES = {"OFF": 0, "ON": 1, "PAUSE": 2}
 
-OFF = 0
-ON = 1
-PAUSE = 2
-
-BLACK = (40, 40, 40)
-L_RED = (255, 100, 100)
-L_GREEN = (100, 255, 100)
-L_BLUE = (100, 100, 255)
-WHITE = (240, 240, 240)
+COLORS = {
+    "BLACK": (40, 40, 40),
+    "L_RED": (255, 100, 100),
+    "L_GREEN": (100, 255, 100),
+    "L_BLUE": (100, 100, 255),
+    "WHITE": (240, 240, 240),
+}
 
 
 class Color(object):
@@ -36,7 +36,7 @@ class Window(object):
     display: pygame.Surface = None
     frame_color: tuple = None
 
-    def __init__(self, window_resolution: tuple, frame_color: tuple):
+    def __init__(self, window_resolution: tuple, frame_color: tuple=COLORS["BLACK"]):
         self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
         self.frame_color = frame_color
@@ -46,12 +46,12 @@ class Window(object):
         event: int = None
 
         for pygame_event in pygame.event.get():
-            
+
             if pygame_event.type == pygame.QUIT:
                 event = EVENTS["QUITE"]
 
             elif pygame_event.type == pygame.KEYDOWN:
-                
+
                 if pygame_event.key == pygame.K_ESCAPE:
                     event = EVENTS["QUITE"]
 
@@ -59,19 +59,19 @@ class Window(object):
                 continue
 
             events.append(event)
-        
+
         return events
 
     def update(self):
         pygame.display.flip()
-        self.display.fill((0, 0, 0))
+        self.display.fill(self.frame_color)
 
 
 class Scene(object):
     objects: list = None
     connections: list = None  # 2D list: for each object there is a separate list with True on indexes, where object is influenced by object of this index.
 
-    def __init__(self, objects: tuple=tuple(), objects_connections: list=list()):
+    def __init__(self, objects: tuple = tuple(), objects_connections: list = list()):
         self.objects = objects
         self.connections = objects_connections
 
@@ -87,20 +87,26 @@ class Scene(object):
 
         return influancing_objects
 
-    def add_object(self, material_object: gravity.Object, object_connections: list, is_influancer: bool=True):
-        
+    def add_object(
+        self,
+        material_object: gravity.Object,
+        object_connections: list,
+        is_influancer: bool = True,
+    ):
+
         for i in range(len(self.connections)):
             self.connections[i].append(is_influancer)
 
         self.objects.append(material_object)
         self.connections.append(object_connections)
-    
+
     def update(self):
         object_index: int = 0
 
         for material_object in self.objects:
             material_object.update(self.__generate_inluancing_objects__(object_index))
             object_index += 1
+
 
 class Cam(object):
 
@@ -145,9 +151,9 @@ class Simulation(object):
         pass
 
     def main_loop(self):
-        self.state = ON
-        
-        while self.state != OFF:
+        self.state = STATES["ON"]
+
+        while self.state != STATES["OFF"]:
             pygame.clock.tick(self.frame_rate)
 
             self.handle_events()
