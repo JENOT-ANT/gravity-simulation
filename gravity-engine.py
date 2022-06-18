@@ -7,10 +7,12 @@ pygame.init()
 
 FRAME_RATE = 25
 RESOLUTION = (500, 500)
+FONT_PATH: str = None
+FONT_SIZE: int = 20
 
 APP_NAME = "Gravity-Engine"
 
-EVENTS = {"QUITE": 0}
+EVENTS = {"QUITE": 0, "PAUSE": 1}
 STATES = {"OFF": 0, "ON": 1, "PAUSE": 2}
 
 COLORS = {
@@ -22,18 +24,18 @@ COLORS = {
 }
 
 
-class Color(object):
-    red: int = None
-    green: int = None
-    blue: int = None
+# class Color(object):
+#     red: int = None
+#     green: int = None
+#     blue: int = None
 
-    def __init__(self, red, green, blue):
-        self.red = red
-        self.green = green
-        self.blue = blue
+#     def __init__(self, red, green, blue):
+#         self.red = red
+#         self.green = green
+#         self.blue = blue
 
-    def __call__(self):
-        return (self.red, self.green, self.blue)
+#     def __call__(self):
+#         return (self.red, self.green, self.blue)
 
 
 class Window(object):
@@ -59,7 +61,7 @@ class Window(object):
             elif pygame_event.type == pygame.KEYDOWN:
 
                 if pygame_event.key == pygame.K_ESCAPE:
-                    event = EVENTS["QUITE"]
+                    event = EVENTS["PAUSE"]
 
             else:
                 continue
@@ -158,7 +160,12 @@ class Simulation(object):
             if event == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
-
+            elif event == EVENTS["PAUSE"]:
+                
+                if self.state != STATES["PAUSE"]:
+                    self.state = STATES["PAUSE"]
+                else:
+                    self.state = STATES["ON"]
 
     def handle_keys(self):
         pass
@@ -169,12 +176,13 @@ class Simulation(object):
         while self.state != STATES["OFF"]:
             self.clock.tick(self.frame_rate)
 
-            # code hire
-
-            self.scene.update()
+            
+            if self.state != STATES["PAUSE"]:
+                self.scene.update()
+            
             self.window.update()
-
             self.handle_events()
+
 
 app = Simulation(RESOLUTION, FRAME_RATE, COLORS["BLACK"], (0, 0), 1)
 app.main_loop()
