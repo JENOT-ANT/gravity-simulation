@@ -2,7 +2,7 @@ import math
 from vector import *
 
 G = 6.6743015 * pow(10, -17)  # for [km]
-
+BOUNCING_FACTOR = 0.8
 
 class Object(object):
     """material object class"""
@@ -35,7 +35,7 @@ class Object(object):
         self.acceleration = Vector(0, 0)
 
 
-    def _one_object_gravity_(self, influancing_object):
+    def __one_object_gravity__(self, influancing_object):
         angle: float = None
         gravity: Vector = Vector(0, 0)
 
@@ -61,7 +61,7 @@ class Object(object):
 
         for influanceing_object in influacing_objects:
             gravity = add_vectors(
-                gravity, self._one_object_gravity_(influanceing_object)
+                gravity, self.__one_object_gravity__(influanceing_object)
             )
 
         return gravity
@@ -75,22 +75,26 @@ class Object(object):
         self.velocity = add_vectors(self.velocity, self.acceleration)
 
     def handle_collsion(self, influacing_objects: tuple):
-        for influanceing_object in influacing_objects:
+        for influancing_object in influacing_objects:
+            
             distance: Vector = subtract_vectors(
-                influanceing_object.position, self.position
+                influancing_object.position, self.position
             )
 
-            if distance.get_value() <= (self.radius + influanceing_object.radius):
-                self.velocity.x = (
-                    self.velocity.x * (self.mass - influanceing_object.mass)
-                    + (2 * influanceing_object.mass * influanceing_object.velocity.x)
-                ) / (self.mass + influanceing_object.mass)
-                
-                self.velocity.y = (
-                    self.velocity.y * (self.mass - influanceing_object.mass)
-                    + (2 * influanceing_object.mass * influanceing_object.velocity.y)
-                ) / (self.mass + influanceing_object.mass)
-
+            if distance.get_value() <= (self.radius + influancing_object.radius):
+                if self.velocity.get_value() > 1:
+                    self.velocity.x = (
+                        BOUNCING_FACTOR * self.velocity.x * (self.mass - influancing_object.mass)
+                        + (2 * influancing_object.mass * influancing_object.velocity.x)
+                    ) / (self.mass + influancing_object.mass)
+                        
+                    self.velocity.y = (
+                        BOUNCING_FACTOR * self.velocity.y * (self.mass - influancing_object.mass)
+                        + (2 * influancing_object.mass * influancing_object.velocity.y)
+                    ) / (self.mass + influancing_object.mass)
+            
+                elif self.mass < influancing_object.mass:
+                    self.velocity = influancing_object.velocity
 
     def update_position(self):
         self.position = add_vectors(self.position, self.velocity)
@@ -101,7 +105,10 @@ class Object(object):
         self.force = add_vectors(force, self.calculate_gravity(influancing_objects))
         self.calculate_acceleration()
         
-        self.handle_collsion(influancing_objects)
         self.update_velocity()
+        self.handle_collsion(influancing_objects)
         
         self.update_position()
+
+    def set_velocity(self, velocity: Vector):
+        self.velocity = velocity
