@@ -7,10 +7,15 @@ This project's purpose is to simulate gravitational interactions between various
 This project is not complited yet, so if you want to contribute to it you are welcome. You can apply for *contributor* entitlements using [**Discussion**](https://github.com/JENOT-ANT/gravity-simulation/discussions) tab. Any help would be appreciated.
 
 ## Contents:
-- ["gravity.py"](/gravity.py)  > library
-- ["vector.py"](/vector.py)   > library
-- [example planet system simulation](/temporary-example-planet-system.py)
-- [example **Solar System** simulation](/temporary-solar-system-simulation.py)
+- ["gravity-engine.py"](/gravity-engine.py) > ***application*** to create and performe gravity simulations (not complited yet)
+
+- ["gravity.py"](/gravity.py) > ***library*** with an API to simulate gravity interactions
+- ["vector.py"](/vector.py) > ***library*** with an API to create and performe calculations on 2D vector objects
+- ["gui.py"](/gui.py) > ***library*** with n API to create a *grafic user interface* via **Pygame**
+
+- temporary (old implementation) examples:
+  - [example planet system simulation](/temporary-example-planet-system.py)
+  - [example **Solar System** simulation](/temporary-solar-system-simulation.py)
 
 ## Info:
 This project uses "pygame" to render simulation, so it's necessary to have pygame module installed to run it properly.
