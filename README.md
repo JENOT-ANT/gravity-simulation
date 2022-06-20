@@ -14,8 +14,8 @@ This project is not complited yet, so if you want to contribute to it you are we
 - ["gui.py"](/gui.py) > ***library*** with n API to create a *grafic user interface* via **Pygame**
 
 - temporary (old implementation) examples:
-  - [example planet system simulation](/temporary-example-planet-system.py)
-  - [example **Solar System** simulation](/temporary-solar-system-simulation.py)
+  - [example planet system simulation](/examples/temporary-example-planet-system.py)
+  - [example **Solar System** simulation](/examples/temporary-solar-system-simulation.py)
 
 ## Info:
 This project uses "pygame" to render simulation, so it's necessary to have pygame module installed to run it properly.
