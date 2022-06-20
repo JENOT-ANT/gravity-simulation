@@ -15,7 +15,7 @@ CAM_SPEED: int = 3
 LITTLE: float = 0.0001
 APP_NAME: str = "Gravity-Engine"
 
-EVENTS = {"QUITE": 0, "PAUSE": 1, "ZOOM": 2}
+EVENTS = {"QUITE": 0, "PAUSE": 1, "ZOOM": 2, "MOUSE_LEFT_BUTTON": 3}
 STATES = {"OFF": 0, "ON": 1, "PAUSE": 2}
 
 COLORS = {
@@ -72,6 +72,10 @@ class Window(object):
             elif pygame_event.type == pygame.MOUSEWHEEL:
                 event = Event(EVENTS["ZOOM"], pygame_event.y)
 
+            elif pygame_event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame_event.button == 1:
+                    event = Event(EVENTS["MOUSE_LEFT_BUTTON"])
+                
             else:
                 continue
 
@@ -249,6 +253,7 @@ class Simulation(object):
             "simulation", (10, 10), (580, 580), COLORS["BLACK"]
         )
         self.main_interface.frames["simulation"].add_scene_view(self.scene)
+        self.main_interface.frames["simulation"].add_button("menu", "|menu|", (10, 10), COLORS["WHITE"], COLORS["L_BLUE"], COLORS["L_GREEN"])
 
     def create_menu_interface(self):
         self.menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
@@ -274,6 +279,7 @@ class Simulation(object):
 
                 self.handle_keys()
                 self.handle_events_simulation()
+                
 
             else:
                 self.window.render(self.menu_interface)
