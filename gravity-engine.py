@@ -60,7 +60,7 @@ class Window(object):
     def get_events(self, gui_page: gui.Page):
         events: list = []
         event: int = None
-
+        button: tuple = None # (frame_id, button_id)
 
         for pygame_event in pygame.event.get():
 
