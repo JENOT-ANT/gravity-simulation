@@ -21,10 +21,12 @@ def clicked(gui_object, mouse_position, mouse_button_state):
     else:
         return False
 
-
-class Textbox(object):
-    rendered: pygame.Surface = None
+class GUI_object(object):
     rectangle: pygame.Rect = None
+
+class Textbox(GUI_object):
+    rendered: pygame.Surface = None
+    #rectangle: pygame.Rect = None
 
     def __init__(
         self,
@@ -47,10 +49,10 @@ class Textbox(object):
         display.blit(self.rendered, self.rectangle)
 
 
-class Button(object):
+class Button(GUI_object):
     rendered: pygame.Surface = None
     rendered_clicked: pygame.Surface = None
-    rectangle: pygame.Rect = None
+    #rectangle: pygame.Rect = None
 
     def __init__(
         self,
@@ -73,16 +75,18 @@ class Button(object):
 
     def render(self, display: pygame.Surface):
         display.blit(self.rendered, self.rectangle)
+    
+    def is_clicked(self, mouse_position, mouse_button_state):
+        return clicked(self, mouse_position, mouse_button_state)
 
-
-class Inputbox(object):
+class Inputbox(GUI_object):
     pass
 
 
-class Frame(object):
+class Frame(GUI_object):
 
     surface: pygame.Surface = None
-    rectangle: pygame.Rect = None
+    #rectangle: pygame.Rect = None
 
     color: tuple = None
     gui_objects: list = None
@@ -153,6 +157,12 @@ class Frame(object):
 
         display.blit(self.surface, self.rectangle)
 
+    def get_clicked_button(self, mouse_position, mouse_button_state):
+        for id in self.buttons.keys():
+            if self.buttons[id].is_clicked(mouse_position, mouse_button_state) == True:
+                return id
+        
+        return None
 
 class Page(object):
     font: pygame.font.Font = None
@@ -168,3 +178,14 @@ class Page(object):
     def render(self, display: pygame.Surface):
         for frame in self.frames.values():
             frame.render(display)
+
+    def get_clicked_button(self, mouse_position: tuple, mouse_button_state: bool):
+        button_id = None
+
+        for frame_id in self.frames.keys():
+            button_id = self.frames[frame_id].get_clicked_button(mouse_position, mouse_button_state)
+            
+            if button_id != None:
+                return (frame_id, button_id)
+
+        return None

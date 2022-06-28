@@ -42,6 +42,7 @@ class Window(object):
     display: pygame.Surface = None
     frame_color: tuple = None
 
+
     def __init__(
         self,
         window_resolution: tuple,
@@ -53,9 +54,13 @@ class Window(object):
         pygame.display.set_caption(window_name)
         self.frame_color = frame_color
 
-    def get_events(self):
+    def get_mouse_position(self):
+        return pygame.mouse.get_pos()
+
+    def get_events(self, gui_page: gui.Page):
         events: list = []
         event: int = None
+
 
         for pygame_event in pygame.event.get():
 
@@ -73,8 +78,27 @@ class Window(object):
                 event = Event(EVENTS["ZOOM"], pygame_event.y)
 
             elif pygame_event.type == pygame.MOUSEBUTTONDOWN:
-                if pygame_event.button == 1:
-                    event = Event(EVENTS["MOUSE_LEFT_BUTTON"])
+                if pygame_event.button == pygame.BUTTON_LEFT:
+                    
+                    if gui_page != None:
+                        button = gui_page.get_clicked_button(self.get_mouse_position(), True)
+                        
+                        if button != None:
+                            
+                            if button[0] == "simulation":
+                                
+                                if button[1] == "menu":
+                                    event = Event(EVENTS["PAUSE"])
+
+                                else:
+                                    continue
+                            else:
+                                continue
+                        else:
+                            continue
+                    
+                    else:
+                        event = Event(EVENTS["MOUSE_LEFT_BUTTON"])
                 
             else:
                 continue
@@ -210,7 +234,7 @@ class Simulation(object):
         self.clock = pygame.time.Clock()
 
     def handle_events_simulation(self):
-        for event in self.window.get_events():
+        for event in self.window.get_events(self.main_interface):
             if event.id == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
@@ -227,7 +251,7 @@ class Simulation(object):
                 #self.scene.cam.transform(Vector(-ZOOM_SPEED * 290 * event.value * self.scene.cam.scale, -ZOOM_SPEED * 290 * event.value * self.scene.cam.scale))
 
     def handle_events_menu(self):
-        for event in self.window.get_events():
+        for event in self.window.get_events(self.menu_interface):
             if event.id == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
