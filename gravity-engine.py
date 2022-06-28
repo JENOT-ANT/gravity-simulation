@@ -25,6 +25,8 @@ COLORS = {
     "L_GREEN": (100, 255, 100),
     "L_BLUE": (100, 100, 255),
     "WHITE": (240, 240, 240),
+
+    "GRAY": (80, 80, 100),
 }
 
 
@@ -277,6 +279,9 @@ class Simulation(object):
             "simulation", (10, 10), (580, 580), COLORS["BLACK"]
         )
         self.main_interface.frames["simulation"].add_scene_view(self.scene)
+        # self.main_interface.add_frame(
+            # "panel", (0, 0), (RESOLUTION[0], 30), COLORS["GRAY"]
+        # )
         self.main_interface.frames["simulation"].add_button("menu", "|menu|", (10, 10), COLORS["WHITE"], COLORS["L_BLUE"], COLORS["L_GREEN"])
 
     def create_menu_interface(self):

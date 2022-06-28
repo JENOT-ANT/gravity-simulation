@@ -158,6 +158,11 @@ class Frame(GUI_object):
         display.blit(self.surface, self.rectangle)
 
     def get_clicked_button(self, mouse_position, mouse_button_state):
+        mouse_position = (
+            mouse_position[0] - self.rectangle.x,
+            mouse_position[1] - self.rectangle.y
+        )
+
         for id in self.buttons.keys():
             if self.buttons[id].is_clicked(mouse_position, mouse_button_state) == True:
                 return id
