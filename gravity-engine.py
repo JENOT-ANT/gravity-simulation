@@ -61,7 +61,7 @@ class Window(object):
 
     def get_events(self, gui_page: gui.Page):
         events: list = []
-        event: int = None
+        event: Event = None
         button: tuple = None # (frame_id, button_id)
 
         for pygame_event in pygame.event.get():
@@ -101,7 +101,8 @@ class Window(object):
                     
                     else:
                         event = Event(EVENTS["MOUSE_LEFT_BUTTON"])
-                
+                else:
+                    continue
             else:
                 continue
 
@@ -237,6 +238,7 @@ class Simulation(object):
 
     def handle_events_simulation(self):
         for event in self.window.get_events(self.main_interface):
+
             if event.id == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
@@ -254,6 +256,7 @@ class Simulation(object):
 
     def handle_events_menu(self):
         for event in self.window.get_events(self.menu_interface):
+
             if event.id == EVENTS["QUITE"]:
                 pygame.quit()
                 self.state = STATES["OFF"]
