@@ -1,3 +1,8 @@
+[![GitHub issues](https://img.shields.io/github/issues/JENOT-ANT/gravity-simulation?style=for-the-badge)](https://github.com/JENOT-ANT/gravity-simulation/issues)
+[![GitHub forks](https://img.shields.io/github/forks/JENOT-ANT/gravity-simulation?style=for-the-badge)](https://github.com/JENOT-ANT/gravity-simulation/network)
+[![GitHub stars](https://img.shields.io/github/stars/JENOT-ANT/gravity-simulation?style=for-the-badge)](https://github.com/JENOT-ANT/gravity-simulation/stargazers)
+[![GitHub license](https://img.shields.io/github/license/JENOT-ANT/gravity-simulation?style=for-the-badge)](https://github.com/JENOT-ANT/gravity-simulation/blob/main/LICENSE)
+
 # gravity-simulation
 
 This project's purpose is to simulate gravitational interactions between various objects (example: Solar System) in 2D environment.

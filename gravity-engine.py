@@ -85,17 +85,9 @@ class Window(object):
                     if gui_page != None:
                         button = gui_page.get_clicked_button(self.get_mouse_position(), True)
                         
-                        if button != None:
-                            
-                            if button[0] == "simulation":
-                                
-                                if button[1] == "menu":
-                                    event = Event(EVENTS["PAUSE"])
+                        if button != None and button[0] == "simulation" and button[1] == "menu":
+                            event = Event(EVENTS["PAUSE"])
 
-                                else:
-                                    continue
-                            else:
-                                continue
                         else:
                             continue
                     
