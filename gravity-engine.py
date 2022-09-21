@@ -319,19 +319,24 @@ class Simulation(object):
                 self.handle_events_menu()
 
 
-app = Simulation(RESOLUTION, FRAME_RATE, COLORS["L_BLACK"], RESOLUTION, Vector(200, 200), 1)
+def main():
+    app = Simulation(RESOLUTION, FRAME_RATE, COLORS["L_BLACK"], RESOLUTION, Vector(200, 200), 1)
 
-app.scene.add_object(
-    "asteroid", gravity.Object(pow(10, 18), Vector(0, 0), 20, COLORS["L_RED"]), [False]
-)
-app.scene.add_object(
-    "satellite",
-    gravity.Object(10000, Vector(200, 20), 5, COLORS["L_GREEN"]),
-    [True, False],
-)
-app.scene.objects["satellite"].set_velocity(Vector(0, 0.07))
+    app.scene.add_object(
+        "asteroid", gravity.Object(pow(10, 18), Vector(0, 0), 20, COLORS["L_RED"]), [False]
+    )
+    app.scene.add_object(
+        "satellite",
+        gravity.Object(10000, Vector(200, 20), 5, COLORS["L_GREEN"]),
+        [True, False],
+    )
+    app.scene.objects["satellite"].set_velocity(Vector(0, 0.07))
 
-print(app.scene.connections)
-print(app.scene.objects)
+    print(app.scene.connections)
+    print(app.scene.objects)
 
-app.main_loop()
+    app.main_loop()
+
+
+if __name__ == "__main__":
+    main()
