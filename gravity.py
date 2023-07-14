@@ -1,21 +1,22 @@
-import math
+from math import atan, cos, sin
 from vector import *
 
-G = 6.6743015 * pow(10, -17)  # for [km]
-BOUNCING_FACTOR = 0.8
+G: float = 6.6743015 * pow(10, -17)  # for [km]
+BOUNCING_FACTOR: float = 0.8
 
-class Object(object):
-    """material object class"""
 
-    mass: float = None  # [kg]
-    radius: float = None  # [km]
+class Object:
+    '''material object class'''
 
-    position: Vector = None  # [km]
-    force: Vector = None  # [N]
-    acceleration: Vector = None  # [km / t^2]
-    velocity: Vector = None  # [km / t]
+    mass: float             # [kg]
+    radius: float           # [km]
 
-    color: tuple = None # (Red, Green, Blue)
+    position: Vector        # [km]
+    force: Vector           # [N]
+    acceleration: Vector    # [km / t^2]
+    velocity: Vector        # [km / t]
+
+    color: tuple            # (Red, Green, Blue)
     
     
     def __init__(
@@ -35,46 +36,44 @@ class Object(object):
         self.acceleration = Vector(0, 0)
 
 
-    def __one_object_gravity__(self, influancing_object):
-        angle: float = None
+    def _one_object_gravity(self, influancing_object):
+        angle: float
         gravity: Vector = Vector(0, 0)
 
         distance: Vector = subtract_vectors(influancing_object.position, self.position)
         value: float = (G * influancing_object.mass * self.mass) / pow(distance.get_value(), 2)  # (G * M * m) / r^2
 
         if distance.x != 0:
-            angle = math.atan(distance.y / distance.x)
+            angle = atan(distance.y / distance.x)
         else:
             angle = 0
 
         if distance.x > 0:
-            gravity.x = math.cos(angle) * value
-            gravity.y = math.sin(angle) * value
+            gravity.x = cos(angle) * value
+            gravity.y = sin(angle) * value
         else:
-            gravity.x = -(math.cos(angle) * value)
-            gravity.y = -(math.sin(angle) * value)
+            gravity.x = -(cos(angle) * value)
+            gravity.y = -(sin(angle) * value)
 
         return gravity
 
-    def calculate_gravity(self, influacing_objects: tuple):
+    def _calculate_gravity(self, influacing_objects: list):
         gravity: Vector = Vector(0, 0)
 
         for influanceing_object in influacing_objects:
-            gravity = add_vectors(
-                gravity, self.__one_object_gravity__(influanceing_object)
-            )
+            gravity = add_vectors(gravity, self._one_object_gravity(influanceing_object))
 
         return gravity
 
-    def calculate_acceleration(self):
+    def _calculate_acceleration(self):
         self.acceleration: Vector = Vector(
             self.force.x / self.mass, self.force.y / self.mass
         )  # a = F / m
 
-    def update_velocity(self):
+    def _update_velocity(self):
         self.velocity = add_vectors(self.velocity, self.acceleration)
 
-    def handle_collsion(self, influacing_objects: tuple):
+    def _handle_collsion(self, influacing_objects: list):
         for influancing_object in influacing_objects:
             
             distance: Vector = subtract_vectors(
@@ -96,19 +95,19 @@ class Object(object):
                 elif self.mass < influancing_object.mass:
                     self.velocity = influancing_object.velocity
 
-    def update_position(self):
+    def _update_position(self):
         self.position = add_vectors(self.position, self.velocity)
 
 
-    def update(self, influancing_objects, force: Vector=Vector(0, 0)):
+    def update(self, influancing_objects: list, force: Vector=Vector(0, 0)):
         
-        self.force = add_vectors(force, self.calculate_gravity(influancing_objects))
-        self.calculate_acceleration()
+        self.force = add_vectors(force, self._calculate_gravity(influancing_objects))
+        self._calculate_acceleration()
         
-        self.update_velocity()
-        self.handle_collsion(influancing_objects)
+        self._update_velocity()
+        self._handle_collsion(influancing_objects)
         
-        self.update_position()
+        self._update_position()
 
     def set_velocity(self, velocity: Vector):
         self.velocity = velocity

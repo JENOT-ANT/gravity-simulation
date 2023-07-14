@@ -1,4 +1,4 @@
-import gravity
+from gravity import Object
 import pygame
 import gui
 from vector import *
@@ -6,51 +6,50 @@ from vector import *
 pygame.init()
 
 FRAME_RATE: int = 25
-RESOLUTION: tuple = (600, 600)
-FONT_PATH: str = None
+RESOLUTION: tuple[int, int] = (600, 600)
+FONT_PATH: str | None = None
 FONT_SIZE: int = 30
 ZOOM_SPEED: float = 0.05
 CAM_SPEED: int = 3
 
 LITTLE: float = 0.0001
-APP_NAME: str = "Gravity-Engine"
+APP_NAME: str = 'Gravity-Engine'
 
-EVENTS = {"QUITE": 0, "PAUSE": 1, "ZOOM": 2, "MOUSE_LEFT_BUTTON": 3}
-STATES = {"OFF": 0, "ON": 1, "PAUSE": 2}
+EVENTS = {'QUIT': 0, 'KEY': 1, 'ZOOM': 2, 'MOUSE_LEFT_BUTTON': 3, 'BUTTON': 4}
+STATES = {'OFF': 0, 'ON': 1, 'PAUSE': 2, 'MENU': 3}
 
 COLORS = {
-    "BLACK": (10, 10, 10),
-    "L_BLACK": (40, 40, 40),
-    "L_RED": (255, 100, 100),
-    "L_GREEN": (100, 255, 100),
-    "L_BLUE": (100, 100, 255),
-    "WHITE": (240, 240, 240),
+    'BLACK': (10, 10, 10),
+    'L_BLACK': (40, 40, 40),
+    'L_RED': (255, 100, 100),
+    'L_GREEN': (100, 255, 100),
+    'L_BLUE': (100, 100, 255),
+    'WHITE': (240, 240, 240),
 
-    "GRAY": (80, 80, 100),
+    'GRAY': (80, 80, 100),
 }
 
 
 class Event(object):
-    id: int = None
+    '''Useless pygame event wrapper.'''
+    
+    event_id: int
     value = None
 
-    def __init__(self, id: int, value=None):
-        self.id = id
+    def __init__(self, event_id: int, value=None):
+        self.event_id = event_id
         self.value = value
 
 
-class Window(object):
-    resolution = None
-    display: pygame.Surface = None
-    frame_color: tuple = None
+class Window:
+    '''Just another useless wrapper around pygame display and envents.'''
+
+    resolution: tuple[int, int]
+    display: pygame.Surface
+    frame_color: tuple[int, int, int]
 
 
-    def __init__(
-        self,
-        window_resolution: tuple,
-        window_name: str,
-        frame_color: tuple = COLORS["BLACK"],
-    ):
+    def __init__(self, window_resolution: tuple[int, int], window_name: str, frame_color: tuple = COLORS['BLACK']):
         self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
         pygame.display.set_caption(window_name)
@@ -59,63 +58,62 @@ class Window(object):
     def get_mouse_position(self):
         return pygame.mouse.get_pos()
 
-    def get_events(self, gui_page: gui.Page):
-        events: list = []
-        event: Event = None
-        button: tuple = None # (frame_id, button_id)
+    def get_events(self, gui_page: gui.Page) -> list[Event]:
+        events: list[Event] = []
+        button: tuple[str | int, str | int] | None # (frame_id, button_id)
 
         for pygame_event in pygame.event.get():
 
             if pygame_event.type == pygame.QUIT:
-                event = Event(EVENTS["QUITE"])
+                events.append(Event(EVENTS['QUIT']))
 
             elif pygame_event.type == pygame.KEYDOWN:
-
-                if pygame_event.key == pygame.K_ESCAPE:
-                    event = Event(EVENTS["PAUSE"])
-                else:
+                if gui_page.focus is None:
+                    events.append(Event(EVENTS['KEY'], pygame_event.key))
                     continue
+                
+                if pygame_event.key == pygame.K_BACKSPACE:
+                    gui_page.focus.text = gui_page.focus.text[:-1]
+                elif pygame_event.key == pygame.K_ESCAPE:
+                    gui_page.focus.update(False)
+                    gui_page.focus = None
+                    continue
+                else:
+                    gui_page.focus.text += pygame_event.unicode
+                
+                gui_page.focus.update()
 
             elif pygame_event.type == pygame.MOUSEWHEEL:
-                event = Event(EVENTS["ZOOM"], pygame_event.y)
+                events.append(Event(EVENTS['ZOOM'], pygame_event.y))
 
             elif pygame_event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame_event.button == pygame.BUTTON_LEFT:
+                    gui_page.update_focus_state(pygame_event.pos, True)
                     
-                    if gui_page != None:
-                        button = gui_page.get_clicked_button(self.get_mouse_position(), True)
-                        
-                        if button != None and button[0] == "simulation" and button[1] == "menu":
-                            event = Event(EVENTS["PAUSE"])
-
-                        else:
-                            continue
+                    button = gui_page.get_clicked_button(pygame_event.pos, True)
                     
-                    else:
-                        event = Event(EVENTS["MOUSE_LEFT_BUTTON"])
-                else:
-                    continue
+                    if button != None:
+                        events.append(Event(EVENTS['BUTTON'], button))
+                    
             else:
                 continue
-
-            events.append(event)
 
         return events
 
     def render(self, gui_page: gui.Page):
 
         self.display.fill(self.frame_color)  # clear screen
-        gui_page.render(self.display)  # render current gui page
+        gui_page.render(self.display)
 
-        pygame.display.flip()  # flip buffer
+        pygame.display.flip()
 
 
-class Cam(object):
-    size: tuple = None
-    translation: Vector = None
-    scale: int = None
+class Cam:
+    size: tuple[int, int]
+    translation: Vector
+    scale: int
 
-    def __init__(self, size: tuple, translation: Vector, scale: int):
+    def __init__(self, size: tuple[int, int], translation: Vector, scale: int):
         self.size = size
         self.translation = translation
         self.scale = scale
@@ -133,130 +131,103 @@ class Cam(object):
         self.scale = new_scale
 
 
-class Scene(object):
+class Scene:
 
-    objects: dict = None
-    connections: list = None  # 2D list: for each object there is a separate list with True on indexes, where object is influenced by object of this index.
-    cam: Cam = None
+    objects: dict[str | int, Object] # {id: Object}
+    connections: dict[str | int, list[Object]] # {id: [Object, ...]}
+    cam: Cam
 
-    def __init__(
-        self,
-        cam_size: tuple,
-        cam_translation: Vector,
-        cam_scale: int,
-        objects: dict = {},
-        objects_connections: list = list(),
-    ):
-        self.objects = objects
-        self.connections = objects_connections
+    def __init__(self, cam_size: tuple, cam_translation: Vector, cam_scale: int):
+        self.objects = {}
+        self.connections = {}
         self.cam = Cam(cam_size, cam_translation, cam_scale)
 
-    def __render_object__(self, object: gravity.Object, surface: pygame.Surface):
+
+    def _render_object(self, object: Object, surface: pygame.Surface):
         pygame.draw.circle(
             surface,
             object.color,
             (
-                object.position.x * self.cam.scale
-                + self.cam.translation.x * self.cam.scale,
-                object.position.y * self.cam.scale
-                + self.cam.translation.y * self.cam.scale,
+                object.position.x * self.cam.scale + self.cam.translation.x * self.cam.scale,
+                object.position.y * self.cam.scale + self.cam.translation.y * self.cam.scale,
             ),
             object.radius * self.cam.scale,
         )
 
-    def __generate_inluancing_objects__(self, connections_index):
-        object_index: int = 0
-        influancing_objects: list = []
-        objects = tuple(self.objects.values())
+    def add_object(self, object_id: str | int, material_object: Object, connections_by_id: list[str | int], is_influancer: bool = True) -> None:
+        self.objects[object_id] = material_object
+        self.connections[object_id] = []
 
-        for connection in self.connections[connections_index]:
-            if connection == True:
-                influancing_objects.append(objects[object_index])
+        for _object_id in connections_by_id:
+            self.connections[object_id].append(self.objects[_object_id])
 
-            object_index += 1
-
-        return influancing_objects
-
-    def add_object(
-        self,
-        id,
-        material_object: gravity.Object,
-        object_connections: list,
-        is_influancer: bool = True,
-    ):
-
-        for i in range(len(self.connections)):
-            self.connections[i].append(is_influancer)
-
-        self.objects[id] = material_object
-        self.connections.append(object_connections)
+        if is_influancer is False:
+            return
+        
+        for _object_id in self.connections:
+            if _object_id != object_id:
+                self.connections[_object_id].append(self.objects[object_id])
 
     def update(self):
-        object_index: int = 0
-
-        for material_object in self.objects.values():
-            material_object.update(self.__generate_inluancing_objects__(object_index))
-            object_index += 1
+        for object_id in self.objects:
+            self.objects[object_id].update(self.connections[object_id])
 
     def render(self, surface: pygame.Surface):
         for material_object in self.objects.values():
-            self.__render_object__(material_object, surface)
+            self._render_object(material_object, surface)
 
 
-class Simulation(object):
+class Simulation:
 
-    window: Window = None
-    scene: Scene = None
-    state: int = None
-    clock: pygame.time.Clock = None
-    frame_rate: int = None
+    window: Window
+    scene: Scene
+    state: int
+    clock: pygame.time.Clock
+    frame_rate: int
 
-    main_interface: gui.Page = None
-    menu_interface: gui.Page = None
+    main_interface: gui.Page
+    menu_interface: gui.Page
 
-    def __init__(
-        self,
-        window_resolution: tuple,
-        frame_rate: int,
-        frame_color: tuple,
-        cam_size: tuple,
-        cam_translation: Vector,
-        scale: int,
-    ):
+    def __init__(self, window_resolution: tuple[int, int], frame_rate: int, frame_color: tuple[int, int, int], cam_size: tuple, cam_translation: Vector, scale: int):
         self.window = Window(window_resolution, APP_NAME, frame_color)
         self.frame_rate = frame_rate
         self.scene = Scene(cam_size, cam_translation, scale)
         self.clock = pygame.time.Clock()
 
-    def handle_events_simulation(self):
+    def _handle_events_simulation(self):
         for event in self.window.get_events(self.main_interface):
 
-            if event.id == EVENTS["QUITE"]:
+            if event.event_id == EVENTS['QUIT']:
                 pygame.quit()
-                self.state = STATES["OFF"]
+                self.state = STATES['OFF']
 
-            elif event.id == EVENTS["PAUSE"]:
-                self.state = STATES["PAUSE"]
+            elif event.event_id == EVENTS['KEY']:
+                if event.value == pygame.K_SPACE:
+                    self.state = STATES['PAUSE'] if self.state == STATES['ON'] else STATES['ON']
+                elif event.value == pygame.K_ESCAPE:
+                    self.state = STATES['MENU']
+            
+            elif event.event_id == EVENTS['ZOOM']:
+                self.scene.cam.set_scale(self.scene.cam.scale + ZOOM_SPEED * event.value)
+            
+            elif event.event_id == EVENTS['BUTTON']:
+                if event.value[0] == 'simulation':
+                    if event.value[1] == 'menu':
+                        self.state = STATES['MENU']
 
-            elif event.id == EVENTS["ZOOM"]:
-                self.scene.cam.set_scale(
-                    self.scene.cam.scale
-                    + ZOOM_SPEED * event.value# * (abs(event.value) / 2)
-                )
-                #self.scene.cam.translation = Vector(self.scene.cam.translation.x * self.scene.cam.scale, self.scene.cam.translation.y * self.scene.cam.scale)
-                #self.scene.cam.transform(Vector(-ZOOM_SPEED * 290 * event.value * self.scene.cam.scale, -ZOOM_SPEED * 290 * event.value * self.scene.cam.scale))
-
-    def handle_events_menu(self):
+    def _handle_events_menu(self):
         for event in self.window.get_events(self.menu_interface):
 
-            if event.id == EVENTS["QUITE"]:
+            if event.event_id == EVENTS['QUIT']:
                 pygame.quit()
-                self.state = STATES["OFF"]
+                self.state = STATES['OFF']
 
-            elif event.id == EVENTS["PAUSE"]:
-                self.state = STATES["ON"]
+            elif event.event_id == EVENTS['KEY']:
+                if event.value == pygame.K_ESCAPE:
+                    self.state = STATES['ON']
+            
 
-    def handle_keys(self):
+    def _handle_keys(self):
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP] == True:
@@ -268,67 +239,75 @@ class Simulation(object):
         elif keys[pygame.K_LEFT] == True:
             self.scene.cam.transform(Vector(CAM_SPEED, 0))
 
-    def create_main_interface(self):
+    def _create_main_interface(self):
         self.main_interface = gui.Page(FONT_PATH, FONT_SIZE)
+        
         self.main_interface.add_frame(
-            "simulation", (10, 10), (580, 580), COLORS["BLACK"]
+            'simulation', (10, 10), (RESOLUTION[0] - 20, RESOLUTION[1] - 20), COLORS['BLACK']
         )
-        self.main_interface.frames["simulation"].add_scene_view(self.scene)
-        # self.main_interface.add_frame(
-            # "panel", (0, 0), (RESOLUTION[0], 30), COLORS["GRAY"]
-        # )
-        self.main_interface.frames["simulation"].add_button("menu", "|menu|", (10, 10), COLORS["WHITE"], COLORS["L_BLUE"], COLORS["L_GREEN"])
+        self.main_interface.frames['simulation'].add_scene_view(self.scene)
+        self.main_interface.frames['simulation'].add_button('menu', '|menu|', (10, 10), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['L_GREEN'])
+        
+        self.main_interface.add_frame(
+            'panel', (RESOLUTION[0] - 110, 10), (100, RESOLUTION[1] - 20), COLORS['GRAY']
+        )
+        self.main_interface.frames['panel'].add_inputbox('test1', '', (5, 10), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_inputbox('test2', '', (5, 40), 90, COLORS['WHITE'], COLORS['L_BLACK'])
 
-    def create_menu_interface(self):
+    def _create_menu_interface(self):
         self.menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
-        self.menu_interface.add_frame("main", (150, 100), (300, 400), COLORS["L_BLUE"])
+        
+        self.menu_interface.add_frame('main', (RESOLUTION[0] // 2 - 150, 100), (300, 400), COLORS['L_BLUE'])
 
-        self.menu_interface.frames["main"].add_textbox(
-            "- Pause -", (100, 10), COLORS["L_GREEN"], COLORS["L_RED"]
+        self.menu_interface.frames['main'].add_textbox(
+            '- Pause -', (100, 10), COLORS['L_GREEN'], COLORS['L_RED']
         )
 
-    def main_loop(self):
-        self.create_menu_interface()
-        self.create_main_interface()
+    def start(self):
+        self._create_main_interface()
+        self._create_menu_interface()
 
-        self.state = STATES["ON"]
+        self.state = STATES['ON']
 
-        while self.state != STATES["OFF"]:
+        while self.state != STATES['OFF']:
             self.clock.tick(self.frame_rate)
 
-            if self.state == STATES["ON"]:
+            if self.state == STATES['ON']:
                 self.scene.update()
 
                 self.window.render(self.main_interface)
 
-                self.handle_keys()
-                self.handle_events_simulation()
+                self._handle_keys()
+                self._handle_events_simulation()
                 
 
-            else:
+            elif self.state == STATES['PAUSE']:
+                self.window.render(self.main_interface)
+                self._handle_keys()
+                self._handle_events_simulation()
+
+            elif self.state == STATES['MENU']:
                 self.window.render(self.menu_interface)
 
-                self.handle_events_menu()
+                self._handle_events_menu()
 
 
 def main():
-    app = Simulation(RESOLUTION, FRAME_RATE, COLORS["L_BLACK"], RESOLUTION, Vector(200, 200), 1)
+    app = Simulation(RESOLUTION, FRAME_RATE, COLORS['L_BLACK'], RESOLUTION, Vector(200, 200), 1)
 
     app.scene.add_object(
-        "asteroid", gravity.Object(pow(10, 18), Vector(0, 0), 20, COLORS["L_RED"]), [False]
+        'asteroid', Object(pow(10, 18), Vector(0, 0), 20, COLORS['L_RED']), [],
     )
     app.scene.add_object(
-        "satellite",
-        gravity.Object(10000, Vector(200, 20), 5, COLORS["L_GREEN"]),
-        [True, False],
+        'satellite', Object(10000, Vector(200, 20), 5, COLORS['L_GREEN']), ['asteroid',],
     )
-    app.scene.objects["satellite"].set_velocity(Vector(0, 0.07))
+    app.scene.objects['satellite'].set_velocity(Vector(0, 0.5))
 
     print(app.scene.connections)
     print(app.scene.objects)
 
-    app.main_loop()
+    app.start()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

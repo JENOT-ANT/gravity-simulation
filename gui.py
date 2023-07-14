@@ -1,12 +1,11 @@
 import pygame
 
 
-def mouse_over(gui_object, mouse_position: tuple):
+def _mouse_over(gui_object, mouse_position: tuple):
     object_rectangle: pygame.Rect = gui_object.rectangle
 
     if (
-        mouse_position[0] >= object_rectangle.top
-        and mouse_position[1] >= object_rectangle.y
+        mouse_position[0] >= object_rectangle.x and mouse_position[1] >= object_rectangle.y
         and mouse_position[0] <= object_rectangle.x + object_rectangle.width
         and mouse_position[1] <= object_rectangle.y + object_rectangle.height
     ):
@@ -14,29 +13,18 @@ def mouse_over(gui_object, mouse_position: tuple):
     else:
         return False
 
-
-def clicked(gui_object, mouse_position, mouse_button_state):
-    if mouse_over(gui_object, mouse_position) and mouse_button_state == True:
+def _clicked(gui_object, mouse_position: tuple[int, int], mouse_button_state: bool):
+    if _mouse_over(gui_object, mouse_position) and mouse_button_state == True:
         return True
     else:
         return False
 
-class GUI_object(object):
-    rectangle: pygame.Rect = None
 
-class Textbox(GUI_object):
-    rendered: pygame.Surface = None
-    #rectangle: pygame.Rect = None
+class Textbox:
+    rendered: pygame.Surface
+    rectangle: pygame.Rect
 
-    def __init__(
-        self,
-        text: str,
-        position: tuple,
-        foreground_color: tuple,
-        background_color: tuple,
-        font: pygame.font.Font,
-    ):
-
+    def __init__(self, text: str, position: tuple[int, int], foreground_color: tuple, background_color: tuple, font: pygame.font.Font):
         self.rendered = font.render(text, True, foreground_color, background_color)
         self.rectangle = pygame.Rect(
             position[0],
@@ -48,11 +36,47 @@ class Textbox(GUI_object):
     def render(self, display: pygame.Surface):
         display.blit(self.rendered, self.rectangle)
 
+class Inputbox:
+    text: str
+    rendered: pygame.Surface
+    rectangle: pygame.Rect
+    
+    _position: tuple[int, int]
+    _foreground: tuple[int, int, int]
+    _background: tuple[int, int, int]
+    _font: pygame.font.Font
 
-class Button(GUI_object):
-    rendered: pygame.Surface = None
-    rendered_clicked: pygame.Surface = None
-    #rectangle: pygame.Rect = None
+    def update(self, active: bool=True):
+        self.rendered = self._font.render(self.text + ('|' if active else ''), True, self._foreground)
+        
+    def __init__(self, text: str, position: tuple[int, int], width: int, foreground: tuple[int, int, int], background: tuple[int, int, int], font: pygame.font.Font):
+        self.text = text
+
+        self._position = position
+        self._foreground = foreground
+        self._background = background
+        self._font = font
+
+        self.update(False)
+        self.rectangle = pygame.Rect(
+            self._position[0],
+            self._position[1],
+            width,
+            self.rendered.get_height(),
+        )
+        
+
+    def render(self, display: pygame.Surface):
+        pygame.draw.rect(display, self._background, self.rectangle, border_radius=5)
+        display.blit(self.rendered, self.rectangle)
+
+    def is_clicked(self, mouse_position, mouse_button_state):
+        return _clicked(self, mouse_position, mouse_button_state)
+
+class Button:
+    rendered: pygame.Surface
+    rectangle: pygame.Rect
+    rendered_clicked: pygame.Surface
 
     def __init__(
         self,
@@ -77,31 +101,25 @@ class Button(GUI_object):
         display.blit(self.rendered, self.rectangle)
     
     def is_clicked(self, mouse_position, mouse_button_state):
-        return clicked(self, mouse_position, mouse_button_state)
-
-class Inputbox(GUI_object):
-    pass
+        return _clicked(self, mouse_position, mouse_button_state)
 
 
-class Frame(GUI_object):
+class Frame:
+    surface: pygame.Surface
+    rectangle: pygame.Rect
 
-    surface: pygame.Surface = None
-    #rectangle: pygame.Rect = None
+    color: tuple
+    gui_objects: list
+    buttons: dict[str | int, Button]
+    iboxes: dict[str | int, Inputbox]
+    
+    font: pygame.font.Font
 
-    color: tuple = None
-    gui_objects: list = None
-    buttons: dict = None
-    font: pygame.font.Font = None
 
-    def __init__(
-        self,
-        position: tuple,
-        size: tuple,
-        background_color: tuple,
-        font: pygame.font.Font,
-    ):
+    def __init__(self, position: tuple, size: tuple, background_color: tuple, font: pygame.font.Font):
         self.gui_objects = []
         self.buttons = {}
+        self.iboxes = {}
 
         self.surface = pygame.Surface(size)
         self.rectangle = pygame.Rect(position[0], position[1], size[0], size[1])
@@ -109,11 +127,11 @@ class Frame(GUI_object):
         self.color = background_color
         self.font = font
 
-    def get_clicked_buttons(self, mouse_position, mouse_button_state):
+    def get_clicked_buttons(self, mouse_position: tuple[int, int], mouse_button_state: bool):
         output: list = []
 
         for key in self.buttons.keys():
-            if clicked(self.buttons[key], mouse_position, mouse_button_state) == True:
+            if _clicked(self.buttons[key], mouse_position, mouse_button_state) == True:
                 output.append(key)
 
         return output
@@ -129,9 +147,20 @@ class Frame(GUI_object):
             Textbox(text, local_position, foreground_color, background_color, self.font)
         )
 
+    def add_inputbox(
+        self,
+        ibox_id: str | int,
+        text: str,
+        local_position: tuple,
+        width: int,
+        foreground_color: tuple,
+        background_color: tuple,
+    ):
+        self.iboxes[ibox_id] = Inputbox(text, local_position, width, foreground_color, background_color, self.font)
+    
     def add_button(
         self,
-        id,
+        button_id: str | int,
         text: str,
         position: tuple,
         foreground_color: tuple,
@@ -139,7 +168,7 @@ class Frame(GUI_object):
         click_color: tuple,
     ):
 
-        self.buttons[id] = Button(
+        self.buttons[button_id] = Button(
             text, position, foreground_color, background_color, click_color, self.font
         )
 
@@ -154,43 +183,86 @@ class Frame(GUI_object):
 
         for button in self.buttons.values():
             button.render(self.surface)
+        
+        for ibox in self.iboxes.values():
+            ibox.render(self.surface)
 
         display.blit(self.surface, self.rectangle)
 
-    def get_clicked_button(self, mouse_position, mouse_button_state):
-        mouse_position = (
-            mouse_position[0] - self.rectangle.x,
-            mouse_position[1] - self.rectangle.y
+    def get_clicked_button(self, mouse_position: tuple[int, int], mouse_button_state: bool):
+        # convert mouse position to local
+        _mouse_position: tuple[int, int] = (
+            mouse_position[0] - self.rectangle.left,
+            mouse_position[1] - self.rectangle.top,
         )
 
-        for id in self.buttons.keys():
-            if self.buttons[id].is_clicked(mouse_position, mouse_button_state) == True:
-                return id
+        for button_id in self.buttons:
+            if self.buttons[button_id].is_clicked(_mouse_position, mouse_button_state):
+                return button_id
         
         return None
 
-class Page(object):
-    font: pygame.font.Font = None
-    frames: dict = None
+    def get_clicked_inputbox(self, mouse_position: tuple[int, int], mouse_button_state: bool):
+        # convert mouse position to local
+        _mouse_position: tuple[int, int] = (
+            mouse_position[0] - self.rectangle.left,
+            mouse_position[1] - self.rectangle.top,
+        )
 
-    def __init__(self, font_path: str, font_size: int):
+        for ibox_id in self.iboxes:
+            if self.iboxes[ibox_id].is_clicked(_mouse_position, mouse_button_state):
+                return self.iboxes[ibox_id]
+        
+        return None
+
+class Page:
+    font: pygame.font.Font
+    frames: dict[str | int, Frame]
+    focus: Inputbox | None
+
+    def __init__(self, font_path: str | None, font_size: int):
         self.frames = {}
+        self.focus = None
         self.font = pygame.font.Font(font_path, font_size)
 
-    def add_frame(self, id, position: tuple, size: tuple, background_color: tuple):
-        self.frames[id] = Frame(position, size, background_color, self.font)
+    def add_frame(self, frame_id: str | int, position: tuple[int, int], size: tuple[int, int], background_color: tuple[int, int, int]):
+        self.frames[frame_id] = Frame(position, size, background_color, self.font)
 
     def render(self, display: pygame.Surface):
         for frame in self.frames.values():
             frame.render(display)
 
-    def get_clicked_button(self, mouse_position: tuple, mouse_button_state: bool):
+    def get_clicked_button(self, mouse_position: tuple[int, int], mouse_button_state: bool):
         button_id = None
 
-        for frame_id in self.frames.keys():
+        for frame_id in self.frames:
             button_id = self.frames[frame_id].get_clicked_button(mouse_position, mouse_button_state)
             
-            if button_id != None:
-                return (frame_id, button_id)
+            if button_id is None:
+                continue
+
+            return (frame_id, button_id)
 
         return None
+    
+    def update_focus_state(self, mouse_position: tuple[int, int], mouse_button_state: bool) -> None:
+        new_focus: Inputbox | None
+
+        for frame_id in self.frames:
+            new_focus = self.frames[frame_id].get_clicked_inputbox(mouse_position, mouse_button_state)
+            
+            if new_focus is not None:
+                if self.focus is not None:
+                    self.focus.update(False)
+                
+                self.focus = new_focus
+                self.focus.update()
+                return
+        
+        if mouse_button_state is True:
+            if self.focus is not None:
+                self.focus.update(False)
+            
+            self.focus = None
+            
+        
