@@ -1,21 +1,21 @@
-from gravity import Object
+from gravity import Object, EARTH_MASS
 import pygame
 import gui
 from vector import *
 
 pygame.init()
 
-FRAME_RATE: int = 25
-RESOLUTION: tuple[int, int] = (600, 600)
+FRAME_RATE: int = 30
+RESOLUTION: tuple[int, int] = (800, 600)
 FONT_PATH: str | None = None
 FONT_SIZE: int = 30
-ZOOM_SPEED: float = 0.05
-CAM_SPEED: int = 3
+ZOOM_SPEED: float = 0.0002
+CAM_SPEED: int = 4
 
-LITTLE: float = 0.0001
+LITTLE: float = pow(10, -6)
 APP_NAME: str = 'Gravity-Engine'
 
-EVENTS = {'QUIT': 0, 'KEY': 1, 'ZOOM': 2, 'MOUSE_LEFT_BUTTON': 3, 'BUTTON': 4}
+EVENTS = {'QUIT': 0, 'KEY': 1, 'ZOOM': 2, 'MOUSE_LEFT_BUTTON': 3, 'MOUSE_RIGHT_BUTTON': 4, 'BUTTON': 5}
 STATES = {'OFF': 0, 'ON': 1, 'PAUSE': 2, 'MENU': 3}
 
 COLORS = {
@@ -49,7 +49,7 @@ class Window:
     frame_color: tuple[int, int, int]
 
 
-    def __init__(self, window_resolution: tuple[int, int], window_name: str, frame_color: tuple = COLORS['BLACK']):
+    def __init__(self, window_resolution: tuple[int, int], window_name: str, frame_color: tuple[int, int, int] = COLORS['BLACK']):
         self.resolution = window_resolution
         self.display = pygame.display.set_mode(self.resolution)
         pygame.display.set_caption(window_name)
@@ -94,7 +94,10 @@ class Window:
                     
                     if button != None:
                         events.append(Event(EVENTS['BUTTON'], button))
-                    
+                    else:
+                        events.append(Event(EVENTS['MOUSE_LEFT_BUTTON'], gui_page.local_mouse_position(pygame_event.pos)))
+                elif pygame_event.button == pygame.BUTTON_RIGHT:
+                    events.append(Event(EVENTS['MOUSE_RIGHT_BUTTON'], gui_page.local_mouse_position(pygame_event.pos)))
             else:
                 continue
 
@@ -111,23 +114,23 @@ class Window:
 class Cam:
     size: tuple[int, int]
     translation: Vector
-    scale: int
+    scale: float
 
-    def __init__(self, size: tuple[int, int], translation: Vector, scale: int):
+    def __init__(self, size: tuple[int, int], translation: Vector, scale: float):
         self.size = size
         self.translation = translation
         self.scale = scale
 
-    def transform(self, transformation: Vector):
+    def translate(self, translation: Vector):
         self.translation = add_vectors(
             self.translation,
             Vector(
-                transformation.x / (self.scale + LITTLE),
-                transformation.y / (self.scale + LITTLE),
+                translation.x / (self.scale + LITTLE),
+                translation.y / (self.scale + LITTLE),
             ),
         )
 
-    def set_scale(self, new_scale: int):
+    def set_scale(self, new_scale: float):
         self.scale = new_scale
 
 
@@ -137,7 +140,7 @@ class Scene:
     connections: dict[str | int, list[Object]] # {id: [Object, ...]}
     cam: Cam
 
-    def __init__(self, cam_size: tuple, cam_translation: Vector, cam_scale: int):
+    def __init__(self, cam_size: tuple[int, int], cam_translation: Vector, cam_scale: float):
         self.objects = {}
         self.connections = {}
         self.cam = Cam(cam_size, cam_translation, cam_scale)
@@ -148,8 +151,8 @@ class Scene:
             surface,
             object.color,
             (
-                object.position.x * self.cam.scale + self.cam.translation.x * self.cam.scale,
-                object.position.y * self.cam.scale + self.cam.translation.y * self.cam.scale,
+                (object.position.x + self.cam.translation.x) * self.cam.scale + RESOLUTION[0] / 2,
+                (object.position.y + self.cam.translation.y) * self.cam.scale + RESOLUTION[1] / 2,
             ),
             object.radius * self.cam.scale,
         )
@@ -177,7 +180,7 @@ class Scene:
             self._render_object(material_object, surface)
 
 
-class Simulation:
+class App:
 
     window: Window
     scene: Scene
@@ -188,13 +191,17 @@ class Simulation:
     main_interface: gui.Page
     menu_interface: gui.Page
 
+    click_waiter: bool
+
     def __init__(self, window_resolution: tuple[int, int], frame_rate: int, frame_color: tuple[int, int, int], cam_size: tuple, cam_translation: Vector, scale: int):
         self.window = Window(window_resolution, APP_NAME, frame_color)
         self.frame_rate = frame_rate
         self.scene = Scene(cam_size, cam_translation, scale)
         self.clock = pygame.time.Clock()
+        self.click_waiter = False
 
     def _handle_events_simulation(self):
+        
         for event in self.window.get_events(self.main_interface):
 
             if event.event_id == EVENTS['QUIT']:
@@ -214,6 +221,66 @@ class Simulation:
                 if event.value[0] == 'simulation':
                     if event.value[1] == 'menu':
                         self.state = STATES['MENU']
+                elif event.value[0] == 'panel':
+                    if event.value[1] == 'create':
+                        self.scene.add_object(
+                            self.main_interface.frames['panel'].iboxes['name'].text,
+                            Object(
+                                float(self.main_interface.frames['panel'].iboxes['mass'].text) * EARTH_MASS,
+                                Vector(
+                                    float(self.main_interface.frames['panel'].iboxes['x'].text),
+                                    float(self.main_interface.frames['panel'].iboxes['y'].text)
+                                ),
+                                float(self.main_interface.frames['panel'].iboxes['radius'].text),
+                                (50, 200, 100)
+                            ),
+                            [key for key in self.scene.objects.keys()]
+                        )
+                        self.scene.objects[self.main_interface.frames['panel'].iboxes['name'].text].set_velocity(
+                            Vector(
+                                float(self.main_interface.frames['panel'].iboxes['v_x'].text),
+                                float(self.main_interface.frames['panel'].iboxes['v_y'].text)
+                            )
+                        )
+
+                        self.main_interface.frames['panel'].iboxes['name'].text = ''
+                        self.main_interface.frames['panel'].iboxes['name'].update(False)
+                        self.main_interface.frames['panel'].iboxes['mass'].text = ''
+                        self.main_interface.frames['panel'].iboxes['mass'].update(False)
+                        self.main_interface.frames['panel'].iboxes['radius'].text = ''
+                        self.main_interface.frames['panel'].iboxes['radius'].update(False)
+                        self.main_interface.frames['panel'].iboxes['v_x'].text = ''
+                        self.main_interface.frames['panel'].iboxes['v_x'].update(False)
+                        self.main_interface.frames['panel'].iboxes['v_y'].text = ''
+                        self.main_interface.frames['panel'].iboxes['v_y'].update(False)
+                        self.main_interface.frames['panel'].iboxes['x'].text = ''
+                        self.main_interface.frames['panel'].iboxes['x'].update(False)
+                        self.main_interface.frames['panel'].iboxes['y'].text = ''
+                        self.main_interface.frames['panel'].iboxes['y'].update(False)
+
+                    elif event.value[1] == 'set':
+                        if self.click_waiter is True:
+                            self.click_waiter = False
+                            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                        else:
+                            self.click_waiter = True
+                            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+
+            elif event.event_id == EVENTS['MOUSE_LEFT_BUTTON']:
+                if self.click_waiter is True:
+                    self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0] - RESOLUTION[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x)
+                    self.main_interface.frames['panel'].iboxes['x'].update(False)
+                    self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1] - RESOLUTION[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y)
+                    self.main_interface.frames['panel'].iboxes['y'].update(False)
+
+                    self.click_waiter = False
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
+            elif event.event_id == EVENTS['MOUSE_RIGHT_BUTTON']:
+                if self.click_waiter is True:
+                    self.click_waiter = False
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
 
     def _handle_events_menu(self):
         for event in self.window.get_events(self.menu_interface):
@@ -231,13 +298,13 @@ class Simulation:
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP] == True:
-            self.scene.cam.transform(Vector(0, CAM_SPEED))
+            self.scene.cam.translate(Vector(0, CAM_SPEED))
         elif keys[pygame.K_DOWN] == True:
-            self.scene.cam.transform(Vector(0, -CAM_SPEED))
+            self.scene.cam.translate(Vector(0, -CAM_SPEED))
         if keys[pygame.K_RIGHT] == True:
-            self.scene.cam.transform(Vector(-CAM_SPEED, 0))
+            self.scene.cam.translate(Vector(-CAM_SPEED, 0))
         elif keys[pygame.K_LEFT] == True:
-            self.scene.cam.transform(Vector(CAM_SPEED, 0))
+            self.scene.cam.translate(Vector(CAM_SPEED, 0))
 
     def _create_main_interface(self):
         self.main_interface = gui.Page(FONT_PATH, FONT_SIZE)
@@ -251,8 +318,33 @@ class Simulation:
         self.main_interface.add_frame(
             'panel', (RESOLUTION[0] - 110, 10), (100, RESOLUTION[1] - 20), COLORS['GRAY']
         )
-        self.main_interface.frames['panel'].add_inputbox('test1', '', (5, 10), 90, COLORS['WHITE'], COLORS['L_BLACK'])
-        self.main_interface.frames['panel'].add_inputbox('test2', '', (5, 40), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        
+        self.main_interface.frames['panel'].add_textbox('name:', (5, 10), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('name', '', (5, 35), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        
+        self.main_interface.frames['panel'].add_textbox('m [M+]:', (5, 65), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('mass', '', (5, 90), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        
+        self.main_interface.frames['panel'].add_textbox('r [km]:', (5, 120), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('radius', '', (5, 145), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+
+        self.main_interface.frames['panel'].add_textbox('v(x):', (5, 175), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('v_x', '', (5, 200), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+
+        self.main_interface.frames['panel'].add_textbox('v(y):', (5, 230), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('v_y', '', (5, 255), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+
+
+        self.main_interface.frames['panel'].add_textbox('x:', (5, 310), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('x', '', (5, 335), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        
+        self.main_interface.frames['panel'].add_textbox('y:', (5, 365), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('y', '', (5, 390), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        
+        self.main_interface.frames['panel'].add_button('set', '|set|', (25, 415), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['WHITE'])
+
+        self.main_interface.frames['panel'].add_button('create', '|create|', (15, 500), COLORS['GRAY'], COLORS['L_GREEN'], COLORS['WHITE'])
+
 
     def _create_menu_interface(self):
         self.menu_interface = gui.Page(FONT_PATH, FONT_SIZE)
@@ -283,6 +375,7 @@ class Simulation:
 
             elif self.state == STATES['PAUSE']:
                 self.window.render(self.main_interface)
+                
                 self._handle_keys()
                 self._handle_events_simulation()
 
@@ -293,15 +386,15 @@ class Simulation:
 
 
 def main():
-    app = Simulation(RESOLUTION, FRAME_RATE, COLORS['L_BLACK'], RESOLUTION, Vector(200, 200), 1)
+    app = App(RESOLUTION, FRAME_RATE, COLORS['L_BLACK'], RESOLUTION, Vector(200, 200), pow(10, -2))
 
     app.scene.add_object(
-        'asteroid', Object(pow(10, 18), Vector(0, 0), 20, COLORS['L_RED']), [],
+        'earth', Object(EARTH_MASS, Vector(0, 0), 6378, COLORS['L_RED']), [],
     )
     app.scene.add_object(
-        'satellite', Object(10000, Vector(200, 20), 5, COLORS['L_GREEN']), ['asteroid',],
+        'satellite', Object(5000, Vector(10000, 20), 200, COLORS['L_GREEN']), ['earth',],
     )
-    app.scene.objects['satellite'].set_velocity(Vector(0, 0.5))
+    app.scene.objects['satellite'].set_velocity(Vector(0, 200))
 
     print(app.scene.connections)
     print(app.scene.objects)

@@ -232,6 +232,11 @@ class Page:
         for frame in self.frames.values():
             frame.render(display)
 
+    def local_mouse_position(self, mouse_position: tuple[int, int]):
+        for frame in self.frames.keys():
+            if _mouse_over(self.frames[frame], mouse_position):
+                return frame, (mouse_position[0] - self.frames[frame].rectangle.x, mouse_position[1] - self.frames[frame].rectangle.y)
+
     def get_clicked_button(self, mouse_position: tuple[int, int], mouse_button_state: bool):
         button_id = None
 

@@ -3,6 +3,7 @@ from vector import *
 
 G: float = 6.6743015 * pow(10, -17)  # for [km]
 BOUNCING_FACTOR: float = 0.8
+EARTH_MASS: float = 5.9722 * pow(10, 24)
 
 
 class Object:
@@ -111,3 +112,4 @@ class Object:
 
     def set_velocity(self, velocity: Vector):
         self.velocity = velocity
+        

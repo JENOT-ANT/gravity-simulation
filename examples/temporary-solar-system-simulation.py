@@ -186,6 +186,9 @@ def main():
 
     while True:
         clock.tick(FRAME_RATE)
+        force.x = 0
+        force.y = 0
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -210,16 +213,16 @@ def main():
             speed = 5
 
         if keyboard[pygame.K_w]:
-            force.y -= pow(10, 1)
+            force.y = -5*pow(10, 1)
 
         elif keyboard[pygame.K_s]:
-            force.y += pow(10, 1)
+            force.y = 5*pow(10, 1)
 
         elif keyboard[pygame.K_d]:
-            force.x += pow(10, 1)
+            force.x = 5*pow(10, 1)
 
         elif keyboard[pygame.K_a]:
-            force.x -= pow(10, 1)
+            force.x = -5*pow(10, 1)
 
         elif keyboard[pygame.K_f]:
             force.x = 0
