@@ -1,15 +1,15 @@
 from math import atan, cos, sin
 from vector import *
 
-G: float = 6.6743015 * pow(10, -17)  # for [km]
+G: float = 6.6743015 * pow(10, -17)  # for [km and 1000 kg]
 BOUNCING_FACTOR: float = 0.8
-EARTH_MASS: float = 5.9722 * pow(10, 24)
+EARTH_MASS: float = 5.9722 * pow(10, 21) # [1000 kg]
 
 
 class Object:
     '''material object class'''
 
-    mass: float             # [kg]
+    mass: float             # [1000 kg]
     radius: float           # [km]
 
     position: Vector        # [km]
