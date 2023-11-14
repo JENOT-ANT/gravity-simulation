@@ -215,6 +215,11 @@ class Frame:
         
         return None
 
+    def update_iboxes(self):
+        for ibox in self.iboxes.values():
+            ibox.update(False)
+        
+
 class Page:
     font: pygame.font.Font
     frames: dict[str | int, Frame]

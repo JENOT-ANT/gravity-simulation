@@ -2,11 +2,14 @@ from gravity import Object, EARTH_MASS
 import pygame
 import gui
 from vector import *
+from math import dist
 
 pygame.init()
 
-FRAME_RATE: int = 30
+FRAME_RATE: int = 60
+ENGINE_RATE: int = 5
 RESOLUTION: tuple[int, int] = (800, 600)
+CAM_SIZE: tuple[int, int] = (RESOLUTION[0] - 130, RESOLUTION[1] - 20)
 FONT_PATH: str | None = None
 FONT_SIZE: int = 30
 ZOOM_SPEED: float = 0.0002
@@ -151,8 +154,8 @@ class Scene:
             surface,
             object.color,
             (
-                (object.position.x + self.cam.translation.x) * self.cam.scale + RESOLUTION[0] / 2,
-                (object.position.y + self.cam.translation.y) * self.cam.scale + RESOLUTION[1] / 2,
+                (object.position.x + self.cam.translation.x) * self.cam.scale + self.cam.size[0] / 2,
+                (object.position.y + self.cam.translation.y) * self.cam.scale + self.cam.size[1] / 2,
             ),
             object.radius * self.cam.scale,
         )
@@ -178,6 +181,10 @@ class Scene:
     def render(self, surface: pygame.Surface):
         for material_object in self.objects.values():
             self._render_object(material_object, surface)
+        
+        # pygame.draw.circle(surface, (200, 50, 50), (0, 0), 5)
+        # pygame.draw.circle(surface, (200, 50, 50), (self.cam.size[0] / 2, self.cam.size[1] / 2), 5)
+        # pygame.draw.circle(surface, (200, 50, 50), (self.cam.size[0], self.cam.size[1]), 5)
 
 
 class App:
@@ -193,12 +200,64 @@ class App:
 
     click_waiter: bool
 
-    def __init__(self, window_resolution: tuple[int, int], frame_rate: int, frame_color: tuple[int, int, int], cam_size: tuple, cam_translation: Vector, scale: int):
+    def __init__(self, window_resolution: tuple[int, int], frame_rate: int, frame_color: tuple[int, int, int], cam_size: tuple[int, int], cam_translation: Vector, scale: int):
         self.window = Window(window_resolution, APP_NAME, frame_color)
         self.frame_rate = frame_rate
         self.scene = Scene(cam_size, cam_translation, scale)
         self.clock = pygame.time.Clock()
         self.click_waiter = False
+
+    def _handle_create_button(self):
+        name: str = self.main_interface.frames['panel'].iboxes['name'].text
+        mass: float = float(self.main_interface.frames['panel'].iboxes['mass'].text) * EARTH_MASS
+        position: Vector = Vector(
+            float(self.main_interface.frames['panel'].iboxes['x'].text),
+            float(self.main_interface.frames['panel'].iboxes['y'].text)
+        )
+        radius: float = float(self.main_interface.frames['panel'].iboxes['radius'].text)
+        velocity: Vector = Vector(
+            float(self.main_interface.frames['panel'].iboxes['v_x'].text),
+            float(self.main_interface.frames['panel'].iboxes['v_y'].text)
+        )
+
+        if name in self.scene.objects.keys():
+            self.scene.objects[name] = Object(mass, position, radius, (50, 200, 100))
+        else:
+            self.scene.add_object(name, Object(mass, position, radius, (50, 200, 100)), [key for key in self.scene.objects.keys()])
+
+        self.scene.objects[name].set_velocity(velocity)
+
+        self.main_interface.frames['panel'].iboxes['name'].text = ''
+        self.main_interface.frames['panel'].iboxes['mass'].text = ''
+        self.main_interface.frames['panel'].iboxes['radius'].text = ''
+        self.main_interface.frames['panel'].iboxes['v_x'].text = ''
+        self.main_interface.frames['panel'].iboxes['v_y'].text = ''
+        self.main_interface.frames['panel'].iboxes['x'].text = ''
+        self.main_interface.frames['panel'].iboxes['y'].text = ''
+        
+        self.main_interface.frames['panel'].update_iboxes()
+
+    def _handle_scene_click(self, mouse_local_position: tuple):
+        material_object: Object
+        world_mouse_position: tuple[float, float] = (
+            (mouse_local_position[0] - self.scene.cam.size[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x,
+            (mouse_local_position[1] - self.scene.cam.size[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y
+        )
+
+        for object_id in self.scene.objects.keys():
+            material_object = self.scene.objects[object_id]
+            
+            if dist(material_object.position.to_tuple(), world_mouse_position) <= material_object.radius:
+                self.main_interface.frames['panel'].iboxes['name'].text = str(object_id)
+                self.main_interface.frames['panel'].iboxes['mass'].text = str(round(material_object.mass / EARTH_MASS, 6))
+                self.main_interface.frames['panel'].iboxes['radius'].text = str(round(material_object.radius))
+                self.main_interface.frames['panel'].iboxes['v_x'].text = str(round(material_object.velocity.x, 4))
+                self.main_interface.frames['panel'].iboxes['v_y'].text = str(round(material_object.velocity.y, 4))
+                self.main_interface.frames['panel'].iboxes['x'].text = str(round(material_object.position.x))
+                self.main_interface.frames['panel'].iboxes['y'].text = str(round(material_object.position.y))
+                
+                self.main_interface.frames['panel'].update_iboxes()
+                print(object_id)
 
     def _handle_events_simulation(self):
         
@@ -223,41 +282,10 @@ class App:
                         self.state = STATES['MENU']
                 elif event.value[0] == 'panel':
                     if event.value[1] == 'create':
-                        self.scene.add_object(
-                            self.main_interface.frames['panel'].iboxes['name'].text,
-                            Object(
-                                float(self.main_interface.frames['panel'].iboxes['mass'].text) * EARTH_MASS,
-                                Vector(
-                                    float(self.main_interface.frames['panel'].iboxes['x'].text),
-                                    float(self.main_interface.frames['panel'].iboxes['y'].text)
-                                ),
-                                float(self.main_interface.frames['panel'].iboxes['radius'].text),
-                                (50, 200, 100)
-                            ),
-                            [key for key in self.scene.objects.keys()]
-                        )
-                        self.scene.objects[self.main_interface.frames['panel'].iboxes['name'].text].set_velocity(
-                            Vector(
-                                float(self.main_interface.frames['panel'].iboxes['v_x'].text),
-                                float(self.main_interface.frames['panel'].iboxes['v_y'].text)
-                            )
-                        )
-
-                        self.main_interface.frames['panel'].iboxes['name'].text = ''
-                        self.main_interface.frames['panel'].iboxes['name'].update(False)
-                        self.main_interface.frames['panel'].iboxes['mass'].text = ''
-                        self.main_interface.frames['panel'].iboxes['mass'].update(False)
-                        self.main_interface.frames['panel'].iboxes['radius'].text = ''
-                        self.main_interface.frames['panel'].iboxes['radius'].update(False)
-                        self.main_interface.frames['panel'].iboxes['v_x'].text = ''
-                        self.main_interface.frames['panel'].iboxes['v_x'].update(False)
-                        self.main_interface.frames['panel'].iboxes['v_y'].text = ''
-                        self.main_interface.frames['panel'].iboxes['v_y'].update(False)
-                        self.main_interface.frames['panel'].iboxes['x'].text = ''
-                        self.main_interface.frames['panel'].iboxes['x'].update(False)
-                        self.main_interface.frames['panel'].iboxes['y'].text = ''
-                        self.main_interface.frames['panel'].iboxes['y'].update(False)
-
+                        try:
+                            self._handle_create_button()
+                        except:
+                            print('Incorrect values.')
                     elif event.value[1] == 'set':
                         if self.click_waiter is True:
                             self.click_waiter = False
@@ -267,14 +295,19 @@ class App:
                             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
 
             elif event.event_id == EVENTS['MOUSE_LEFT_BUTTON']:
-                if self.click_waiter is True:
-                    self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0] - RESOLUTION[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x)
+                if self.click_waiter is True and event.value[0] == 'simulation':
+                    self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0] - self.scene.cam.size[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x)
+                    # self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0]) / self.scene.cam.scale - self.scene.cam.translation.x)
                     self.main_interface.frames['panel'].iboxes['x'].update(False)
-                    self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1] - RESOLUTION[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y)
+                    self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1] - self.scene.cam.size[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y)
+                    # self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1]) / self.scene.cam.scale - self.scene.cam.translation.y)
                     self.main_interface.frames['panel'].iboxes['y'].update(False)
 
                     self.click_waiter = False
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
+                elif self.state == STATES['PAUSE'] and event.value[0] == 'simulation':
+                    self._handle_scene_click(event.value[1])
 
             elif event.event_id == EVENTS['MOUSE_RIGHT_BUTTON']:
                 if self.click_waiter is True:
@@ -297,20 +330,26 @@ class App:
     def _handle_keys(self):
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_UP] == True:
+        if keys[pygame.K_UP] is True or (keys[pygame.K_w] is True and self.main_interface.focus == None):
             self.scene.cam.translate(Vector(0, CAM_SPEED))
-        elif keys[pygame.K_DOWN] == True:
+        elif keys[pygame.K_DOWN] is True or (keys[pygame.K_s] is True and self.main_interface.focus == None):
             self.scene.cam.translate(Vector(0, -CAM_SPEED))
-        if keys[pygame.K_RIGHT] == True:
+        
+        if keys[pygame.K_RIGHT] is True or (keys[pygame.K_d] is True and self.main_interface.focus == None):
             self.scene.cam.translate(Vector(-CAM_SPEED, 0))
-        elif keys[pygame.K_LEFT] == True:
+        elif keys[pygame.K_LEFT] is True or (keys[pygame.K_a] is True and self.main_interface.focus == None):
             self.scene.cam.translate(Vector(CAM_SPEED, 0))
+        
+        if keys[pygame.K_PAGEUP] is True or (keys[pygame.K_q] is True and self.main_interface.focus == None):
+            self.scene.cam.set_scale(self.scene.cam.scale + ZOOM_SPEED)
+        elif keys[pygame.K_PAGEDOWN] is True or (keys[pygame.K_e] is True and self.main_interface.focus == None):
+            self.scene.cam.set_scale(self.scene.cam.scale - ZOOM_SPEED)
 
     def _create_main_interface(self):
         self.main_interface = gui.Page(FONT_PATH, FONT_SIZE)
         
         self.main_interface.add_frame(
-            'simulation', (10, 10), (RESOLUTION[0] - 20, RESOLUTION[1] - 20), COLORS['BLACK']
+            'simulation', (10, 10), CAM_SIZE, COLORS['BLACK']
         )
         self.main_interface.frames['simulation'].add_scene_view(self.scene)
         self.main_interface.frames['simulation'].add_button('menu', '|menu|', (10, 10), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['L_GREEN'])
@@ -365,7 +404,8 @@ class App:
             self.clock.tick(self.frame_rate)
 
             if self.state == STATES['ON']:
-                self.scene.update()
+                for _ in range(ENGINE_RATE):
+                    self.scene.update()
 
                 self.window.render(self.main_interface)
 
@@ -386,15 +426,15 @@ class App:
 
 
 def main():
-    app = App(RESOLUTION, FRAME_RATE, COLORS['L_BLACK'], RESOLUTION, Vector(200, 200), pow(10, -2))
+    app = App(RESOLUTION, FRAME_RATE, COLORS['L_BLACK'], CAM_SIZE, Vector(0, 0), pow(10, -2))
 
     app.scene.add_object(
         'earth', Object(EARTH_MASS, Vector(0, 0), 6378, COLORS['L_RED']), [],
     )
     app.scene.add_object(
-        'satellite', Object(5000, Vector(10000, 20), 200, COLORS['L_GREEN']), ['earth',],
+        'satellite', Object(EARTH_MASS * 0.000001, Vector(10000, 20), 200, COLORS['L_GREEN']), ['earth',],
     )
-    app.scene.objects['satellite'].set_velocity(Vector(0, 200))
+    app.scene.objects['satellite'].set_velocity(Vector(0, 6.5))
 
     print(app.scene.connections)
     print(app.scene.objects)
