@@ -3,13 +3,19 @@ import pygame
 import gui
 from vector import *
 from math import dist
+from random import randint
 
 pygame.init()
 
+RESOLUTION: tuple[int, int] = (800, 600)
+MARGIN: int = 10
+CAM_SIZE: tuple[int, int] = (RESOLUTION[0] - MARGIN * 2, RESOLUTION[1] - MARGIN * 2) #(RESOLUTION[0] - 130, RESOLUTION[1] - 20)
+PANEL_WIDTH: int = 150
+OBJECT_FRAME_SIZE: int = 10
+
+
 FRAME_RATE: int = 60
 ENGINE_RATE: int = 5
-RESOLUTION: tuple[int, int] = (800, 600)
-CAM_SIZE: tuple[int, int] = (RESOLUTION[0] - 130, RESOLUTION[1] - 20)
 FONT_PATH: str | None = None
 FONT_SIZE: int = 30
 ZOOM_SPEED: float = 0.0002
@@ -149,15 +155,19 @@ class Scene:
         self.cam = Cam(cam_size, cam_translation, cam_scale)
 
 
-    def _render_object(self, object: Object, surface: pygame.Surface):
+    def _render_object(self, m_object: Object, surface: pygame.Surface):
+        screen_position: tuple = (
+            (m_object.position.x + self.cam.translation.x) * self.cam.scale + self.cam.size[0] / 2,
+            (m_object.position.y + self.cam.translation.y) * self.cam.scale + self.cam.size[1] / 2,
+        )
+        
+        pygame.draw.rect(surface, m_object.color, pygame.Rect(screen_position[0] - OBJECT_FRAME_SIZE // 2, screen_position[1] - OBJECT_FRAME_SIZE // 2, OBJECT_FRAME_SIZE, OBJECT_FRAME_SIZE), width=1, border_radius=2)
+        
         pygame.draw.circle(
             surface,
-            object.color,
-            (
-                (object.position.x + self.cam.translation.x) * self.cam.scale + self.cam.size[0] / 2,
-                (object.position.y + self.cam.translation.y) * self.cam.scale + self.cam.size[1] / 2,
-            ),
-            object.radius * self.cam.scale,
+            m_object.color,
+            screen_position,
+            m_object.radius * self.cam.scale,
         )
 
     def add_object(self, object_id: str | int, material_object: Object, connections_by_id: list[str | int], is_influancer: bool = True) -> None:
@@ -173,6 +183,18 @@ class Scene:
         for _object_id in self.connections:
             if _object_id != object_id:
                 self.connections[_object_id].append(self.objects[object_id])
+
+    def remove_object(self, object_id: str | int):
+        # remove connection for the object
+        self.connections.pop(object_id)
+        
+        # remove connection with this object (for all other objects)
+        for connection in self.connections.values():
+            if self.objects[object_id] in connection:
+                connection.pop(connection.index(self.objects[object_id]))
+        
+        # remove object from the scene
+        self.objects.pop(object_id)
 
     def update(self):
         for object_id in self.objects:
@@ -207,7 +229,20 @@ class App:
         self.clock = pygame.time.Clock()
         self.click_waiter = False
 
-    def _handle_create_button(self):
+    def _clear_panel(self):
+        self.main_interface.frames['panel'].iboxes['name'].text = ''
+        self.main_interface.frames['panel'].iboxes['mass'].text = ''
+        self.main_interface.frames['panel'].iboxes['radius'].text = ''
+        self.main_interface.frames['panel'].iboxes['v_x'].text = ''
+        self.main_interface.frames['panel'].iboxes['v_y'].text = ''
+        self.main_interface.frames['panel'].iboxes['x'].text = ''
+        self.main_interface.frames['panel'].iboxes['y'].text = ''
+        
+        self.main_interface.frames['panel'].update_iboxes()
+
+
+    def _handle_enter_button(self):
+        color: tuple
         name: str = self.main_interface.frames['panel'].iboxes['name'].text
         mass: float = float(self.main_interface.frames['panel'].iboxes['mass'].text) * EARTH_MASS
         position: Vector = Vector(
@@ -221,21 +256,14 @@ class App:
         )
 
         if name in self.scene.objects.keys():
-            self.scene.objects[name] = Object(mass, position, radius, (50, 200, 100))
+            color = self.scene.objects.pop(name).color
+            self.scene.add_object(name, Object(mass, position, radius, color), [key for key in self.scene.objects.keys()])
         else:
-            self.scene.add_object(name, Object(mass, position, radius, (50, 200, 100)), [key for key in self.scene.objects.keys()])
+            self.scene.add_object(name, Object(mass, position, radius, (randint(50, 200), randint(50, 200), randint(50, 200))), [key for key in self.scene.objects.keys()])
 
         self.scene.objects[name].set_velocity(velocity)
-
-        self.main_interface.frames['panel'].iboxes['name'].text = ''
-        self.main_interface.frames['panel'].iboxes['mass'].text = ''
-        self.main_interface.frames['panel'].iboxes['radius'].text = ''
-        self.main_interface.frames['panel'].iboxes['v_x'].text = ''
-        self.main_interface.frames['panel'].iboxes['v_y'].text = ''
-        self.main_interface.frames['panel'].iboxes['x'].text = ''
-        self.main_interface.frames['panel'].iboxes['y'].text = ''
+        self._clear_panel()
         
-        self.main_interface.frames['panel'].update_iboxes()
 
     def _handle_scene_click(self, mouse_local_position: tuple):
         material_object: Object
@@ -243,11 +271,12 @@ class App:
             (mouse_local_position[0] - self.scene.cam.size[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x,
             (mouse_local_position[1] - self.scene.cam.size[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y
         )
+        frame_offset: float = OBJECT_FRAME_SIZE // 2 / self.scene.cam.scale
 
         for object_id in self.scene.objects.keys():
             material_object = self.scene.objects[object_id]
             
-            if dist(material_object.position.to_tuple(), world_mouse_position) <= material_object.radius:
+            if dist(material_object.position.to_tuple(), world_mouse_position) <= material_object.radius + frame_offset:
                 self.main_interface.frames['panel'].iboxes['name'].text = str(object_id)
                 self.main_interface.frames['panel'].iboxes['mass'].text = str(round(material_object.mass / EARTH_MASS, 6))
                 self.main_interface.frames['panel'].iboxes['radius'].text = str(round(material_object.radius))
@@ -258,6 +287,21 @@ class App:
                 
                 self.main_interface.frames['panel'].update_iboxes()
                 print(object_id)
+                return
+        
+        self._clear_panel()
+
+
+    def _on_pause(self):
+        if self.state == STATES['PAUSE']:
+            self.main_interface.frames['panel'].enable = True
+            self.main_interface.frames['simulation'].rectangle.width = CAM_SIZE[0] - PANEL_WIDTH - MARGIN
+            self.main_interface.frames['simulation'].resurface()
+        else:
+            self.main_interface.frames['panel'].enable = False
+            self.main_interface.frames['simulation'].rectangle.width = CAM_SIZE[0]
+            self.main_interface.frames['simulation'].resurface()
+
 
     def _handle_events_simulation(self):
         
@@ -270,6 +314,7 @@ class App:
             elif event.event_id == EVENTS['KEY']:
                 if event.value == pygame.K_SPACE:
                     self.state = STATES['PAUSE'] if self.state == STATES['ON'] else STATES['ON']
+                    self._on_pause()
                 elif event.value == pygame.K_ESCAPE:
                     self.state = STATES['MENU']
             
@@ -280,10 +325,14 @@ class App:
                 if event.value[0] == 'simulation':
                     if event.value[1] == 'menu':
                         self.state = STATES['MENU']
+                    elif event.value[1] == 'edit':
+                        self.state = STATES['PAUSE'] if self.state == STATES['ON'] else STATES['ON']
+                        self._on_pause()
+                
                 elif event.value[0] == 'panel':
-                    if event.value[1] == 'create':
+                    if event.value[1] == 'enter':
                         try:
-                            self._handle_create_button()
+                            self._handle_enter_button()
                         except:
                             print('Incorrect values.')
                     elif event.value[1] == 'set':
@@ -293,13 +342,18 @@ class App:
                         else:
                             self.click_waiter = True
                             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+                    elif event.value[1] == 'delete':
+                        if self.main_interface.frames['panel'].iboxes['name'].text in self.scene.objects:
+                            self.scene.remove_object(self.main_interface.frames['panel'].iboxes['name'].text)
+                        
+                        self._clear_panel()
 
             elif event.event_id == EVENTS['MOUSE_LEFT_BUTTON']:
                 if self.click_waiter is True and event.value[0] == 'simulation':
-                    self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0] - self.scene.cam.size[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x)
+                    self.main_interface.frames['panel'].iboxes['x'].text = str(round((event.value[1][0] - self.scene.cam.size[0] / 2) / self.scene.cam.scale - self.scene.cam.translation.x))
                     # self.main_interface.frames['panel'].iboxes['x'].text = str((event.value[1][0]) / self.scene.cam.scale - self.scene.cam.translation.x)
                     self.main_interface.frames['panel'].iboxes['x'].update(False)
-                    self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1] - self.scene.cam.size[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y)
+                    self.main_interface.frames['panel'].iboxes['y'].text = str(round((event.value[1][1] - self.scene.cam.size[1] / 2) / self.scene.cam.scale - self.scene.cam.translation.y))
                     # self.main_interface.frames['panel'].iboxes['y'].text = str((event.value[1][1]) / self.scene.cam.scale - self.scene.cam.translation.y)
                     self.main_interface.frames['panel'].iboxes['y'].update(False)
 
@@ -325,6 +379,9 @@ class App:
             elif event.event_id == EVENTS['KEY']:
                 if event.value == pygame.K_ESCAPE:
                     self.state = STATES['ON']
+            elif event.event_id == EVENTS['BUTTON']:
+                if event.value[1] == 'back':
+                    self.state = STATES['ON']
             
 
     def _handle_keys(self):
@@ -349,40 +406,43 @@ class App:
         self.main_interface = gui.Page(FONT_PATH, FONT_SIZE)
         
         self.main_interface.add_frame(
-            'simulation', (10, 10), CAM_SIZE, COLORS['BLACK']
+            'simulation', (MARGIN, MARGIN), CAM_SIZE, COLORS['BLACK']
         )
         self.main_interface.frames['simulation'].add_scene_view(self.scene)
-        self.main_interface.frames['simulation'].add_button('menu', '|menu|', (10, 10), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['L_GREEN'])
+        self.main_interface.frames['simulation'].add_button('menu', '| menu |', (10, 10), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['L_GREEN'])
+        self.main_interface.frames['simulation'].add_button('edit', '| edit |', (100, 10), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['L_GREEN'])
         
         self.main_interface.add_frame(
-            'panel', (RESOLUTION[0] - 110, 10), (100, RESOLUTION[1] - 20), COLORS['GRAY']
+            'panel', (RESOLUTION[0] - MARGIN - PANEL_WIDTH, MARGIN), (PANEL_WIDTH, RESOLUTION[1] - MARGIN * 2), COLORS['GRAY']
         )
+        self.main_interface.frames['panel'].enable = False
         
         self.main_interface.frames['panel'].add_textbox('name:', (5, 10), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('name', '', (5, 35), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_inputbox('name', '', (5, 35), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
         
         self.main_interface.frames['panel'].add_textbox('m [M+]:', (5, 65), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('mass', '', (5, 90), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_inputbox('mass', '', (5, 90), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
         
         self.main_interface.frames['panel'].add_textbox('r [km]:', (5, 120), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('radius', '', (5, 145), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_inputbox('radius', '', (5, 145), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
 
-        self.main_interface.frames['panel'].add_textbox('v(x):', (5, 175), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('v_x', '', (5, 200), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_textbox('v(x) [km/T]:', (5, 175), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('v_x', '', (5, 200), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
 
-        self.main_interface.frames['panel'].add_textbox('v(y):', (5, 230), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('v_y', '', (5, 255), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_textbox('v(y) [km/T]:', (5, 230), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('v_y', '', (5, 255), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
 
 
-        self.main_interface.frames['panel'].add_textbox('x:', (5, 310), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('x', '', (5, 335), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_textbox('x [km]:', (5, 310), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('x', '', (5, 335), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
         
-        self.main_interface.frames['panel'].add_textbox('y:', (5, 365), COLORS['WHITE'], COLORS['GRAY'])
-        self.main_interface.frames['panel'].add_inputbox('y', '', (5, 390), 90, COLORS['WHITE'], COLORS['L_BLACK'])
+        self.main_interface.frames['panel'].add_textbox('y [km]:', (5, 365), COLORS['WHITE'], COLORS['GRAY'])
+        self.main_interface.frames['panel'].add_inputbox('y', '', (5, 390), PANEL_WIDTH - MARGIN, COLORS['WHITE'], COLORS['L_BLACK'])
         
-        self.main_interface.frames['panel'].add_button('set', '|set|', (25, 415), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['WHITE'])
+        self.main_interface.frames['panel'].add_button('set', '| set |', (50, 420), COLORS['WHITE'], COLORS['L_BLUE'], COLORS['WHITE'])
 
-        self.main_interface.frames['panel'].add_button('create', '|create|', (15, 500), COLORS['GRAY'], COLORS['L_GREEN'], COLORS['WHITE'])
+        self.main_interface.frames['panel'].add_button('delete', '| delete |', (35, 500), COLORS['WHITE'], COLORS['L_RED'], COLORS['WHITE'])
+        self.main_interface.frames['panel'].add_button('enter', '| enter |', (40, 540), COLORS['GRAY'], COLORS['L_GREEN'], COLORS['WHITE'])
 
 
     def _create_menu_interface(self):
@@ -390,9 +450,8 @@ class App:
         
         self.menu_interface.add_frame('main', (RESOLUTION[0] // 2 - 150, 100), (300, 400), COLORS['L_BLUE'])
 
-        self.menu_interface.frames['main'].add_textbox(
-            '- Pause -', (100, 10), COLORS['L_GREEN'], COLORS['L_RED']
-        )
+        self.menu_interface.frames['main'].add_textbox('- Pause -', (110, 10), COLORS['L_GREEN'], COLORS['L_RED'])
+        self.menu_interface.frames['main'].add_button('back', '| back |', (118, 60), COLORS['GRAY'], COLORS['L_GREEN'], COLORS['BLACK'])
 
     def start(self):
         self._create_main_interface()

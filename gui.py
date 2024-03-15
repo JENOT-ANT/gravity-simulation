@@ -108,6 +108,7 @@ class Frame:
     surface: pygame.Surface
     rectangle: pygame.Rect
 
+    enable: bool
     color: tuple
     gui_objects: list
     buttons: dict[str | int, Button]
@@ -124,6 +125,7 @@ class Frame:
         self.surface = pygame.Surface(size)
         self.rectangle = pygame.Rect(position[0], position[1], size[0], size[1])
 
+        self.enable = True
         self.color = background_color
         self.font = font
 
@@ -176,6 +178,10 @@ class Frame:
         self.gui_objects.append(scene)
 
     def render(self, display: pygame.Surface):
+        
+        if self.enable is False:
+            return
+
         self.surface.fill(self.color)
 
         for gui_object in self.gui_objects:
@@ -190,6 +196,10 @@ class Frame:
         display.blit(self.surface, self.rectangle)
 
     def get_clicked_button(self, mouse_position: tuple[int, int], mouse_button_state: bool):
+        
+        if self.enable is False:
+            return None
+        
         # convert mouse position to local
         _mouse_position: tuple[int, int] = (
             mouse_position[0] - self.rectangle.left,
@@ -203,6 +213,10 @@ class Frame:
         return None
 
     def get_clicked_inputbox(self, mouse_position: tuple[int, int], mouse_button_state: bool):
+        
+        if self.enable is False:
+            return None
+        
         # convert mouse position to local
         _mouse_position: tuple[int, int] = (
             mouse_position[0] - self.rectangle.left,
@@ -219,6 +233,9 @@ class Frame:
         for ibox in self.iboxes.values():
             ibox.update(False)
         
+    def resurface(self):
+        self.surface = pygame.Surface(self.rectangle.size)
+
 
 class Page:
     font: pygame.font.Font
