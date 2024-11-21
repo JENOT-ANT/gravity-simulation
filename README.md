@@ -5,7 +5,7 @@
 
 # gravity-simulation
 
-This project's purpose is to simulate gravitational interactions between various objects (example: Solar System) in 2D environment.
+This project's purpose is to simulate gravitational interactions between various objects (example: Solar System), in 2D environment.
 
 ![image](https://user-images.githubusercontent.com/107063507/173688156-d7bb8a5f-44f3-4418-8e6b-dfdf6c424f4e.png)
 
@@ -14,16 +14,16 @@ This project is not complited yet, so if you want to contribute to it you are we
 ## Contents:
 - ["gravity-engine.py"](/gravity-engine.py) > ***application*** to create and performe gravity simulations (not complited yet)
 
-- ["gravity.py"](/gravity.py) > ***library*** with an API to simulate gravity interactions
-- ["vector.py"](/vector.py) > ***library*** with an API to create and performe calculations on 2D vector objects
-- ["gui.py"](/gui.py) > ***library*** with n API to create a *grafic user interface* via **Pygame**
+- ["gravity.py"](/gravity.py) > ***library*** with a framework for simulating gravity interactions in 2D environment
+- ["vector.py"](/vector.py) > ***library*** with a framework for creating and performing calculations on 2D vector objects
+- ["gui.py"](/gui.py) > ***library*** with a framework for creating a *grafic user interface* via **Pygame**
 
 - temporary (old implementation) examples:
   - [example planet system simulation](/examples/temporary-example-planet-system.py)
   - [example **Solar System** simulation](/examples/temporary-solar-system-simulation.py)
 
 ## Info:
-This project uses "pygame" to render simulation, so it's necessary to have pygame module installed to run it properly.
+This project uses "pygame" to render the simulation, so it's necessary to have the pygame module installed, to run the project properly.
 
 ## Requirements:
 - python
