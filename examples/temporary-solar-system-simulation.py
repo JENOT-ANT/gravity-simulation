@@ -1,7 +1,7 @@
 '''
-This is crude code where the whole project begins.
-It's not very good piece of code, it's just a root of this project,
-which, I hope, will be a little more cleaner.
+This is a crude code where the whole project began.
+It's not a very good piece of code indeed, it's just the root of this project,
+which, as I hope, will be a little more cleaner.
 
 INSTRUCTION:
     esc     > quite
